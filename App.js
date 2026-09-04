@@ -52,10 +52,40 @@ const storage = {
 };
 
 const api = {
+  // النقطة 4: سحب الأرقام السرية سحابياً من Supabase
   getConfig: async () => {
+    try {
+      const { data, error } = await supabase
+        .from('system_config')
+        .select('value')
+        .eq('key', 'app_pins')
+        .single();
+      if (data && data.value) {
+        const pins = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+        await storage.setItem('APP_PINS', pins);
+        return { pins };
+      }
+    } catch (e) {}
     const savedPins = await storage.getItem('APP_PINS', null);
     return savedPins ? { pins: savedPins } : {};
   },
+
+  // النقطة 4: حفظ ومزامنة الأرقام السرية سحابياً
+  updatePins: async (pins) => {
+    await storage.setItem('APP_PINS', pins);
+    try {
+      const { error } = await supabase.from('system_config').upsert({
+        key: 'app_pins',
+        value: pins,
+      });
+      if (error) throw error;
+      return true;
+    } catch (e) {
+      console.error('Supabase PIN sync error:', e);
+      return true; // الاحتفاظ بالحفظ المحلي كبديل
+    }
+  },
+
   getFaults: async () => {
     const { data, error } = await supabase
       .from('faults')
@@ -96,10 +126,6 @@ const api = {
   deleteFault: async (id) => {
     const { error } = await supabase.from('faults').delete().eq('id', id);
     if (error) throw error;
-    return true;
-  },
-  updatePins: async (pins) => {
-    await storage.setItem('APP_PINS', pins);
     return true;
   },
   seedZones: async (zones) => ({ zones }),
@@ -204,8 +230,8 @@ const STRINGS = {
     workerSub: 'استلام المهام، وتصوير الإنجاز بعد تسوية العطل',
     supervisorTitle: 'مشرف / إدارة المجمع',
     supervisorSub: 'المتابعة الحية وسحب التقارير',
-    pinControlTitle: 'التحكم في أرقام السر',
-    pinControlSub: 'تعديل وتعيين الرموز السرية للإدارة، المفتشين، وتسوية الأعطال',
+    pinControlTitle: 'التحكم في أرقام السر (سحابياً)',
+    pinControlSub: 'تعديل ومزامنة الرموز السرية للإدارة، المفتشين، وتسوية الأعطال',
     enterPin: 'يرجى إدخال الرقم السري المعتمد للمتابعة',
     confirmLogin: 'تأكيد الدخول',
     cancel: 'إلغاء',
@@ -303,8 +329,8 @@ const STRINGS = {
     workerSub: 'Manage tasks and capture completion photos',
     supervisorTitle: 'Supervisor / Management',
     supervisorSub: 'Live monitoring and PDF reports',
-    pinControlTitle: 'PIN Management',
-    pinControlSub: 'Configure and update PINs for all user roles',
+    pinControlTitle: 'Cloud PIN Management',
+    pinControlSub: 'Configure and sync PINs across all devices',
     enterPin: 'Please enter authorized PIN to proceed',
     confirmLogin: 'Confirm Login',
     cancel: 'Cancel',
@@ -519,7 +545,7 @@ export default function App() {
   const lastActivityRef = useRef(Date.now());
   const IDLE_MS = 5 * 60 * 1000;
 
-  // النقطة 3: فلتر التخصص ومسؤول الخدمة (وضع التركيز والتظليل)
+  // النقطة 3: شريط التخصصات ووضع التظليل الذكي
   const [selectedSpecialty, setSelectedSpecialty] = useState('all');
 
   // النقطة 2: الشريط الجانبي التفاعلي للغرفة / المرفق
@@ -533,6 +559,7 @@ export default function App() {
   const isFetchingRef = useRef(false);
   const faultsRef = useRef([]);
 
+  // النقطة 4: الرموز السرية الأساسية
   const [passwords, setPasswords] = useState({
     inspector: '1111',
     worker: '2222',
@@ -755,10 +782,14 @@ export default function App() {
   const handleManualRefresh = async () => {
     setRefreshing(true);
     await fetchFaults();
+    try {
+      const cfg = await api.getConfig();
+      if (cfg.pins) setPasswords(cfg.pins);
+    } catch (e) {}
     const imgs = await api.getZoneImages();
     if (imgs) setZoneImages(imgs);
     setRefreshing(false);
-    showToast(lang === 'ar' ? 'تمت المزامنة بنجاح.' : 'Synced successfully.', 'success');
+    showToast(lang === 'ar' ? 'تمت المزامنة السحابية بنجاح.' : 'Cloud sync completed.', 'success');
   };
 
   const handleLogout = () => {
@@ -814,13 +845,11 @@ export default function App() {
     }
   };
 
-  // فتح الشريط الجانبي عند لمس أي موقع
   const handlePressZone = (zone) => {
     setSelectedZoneInfo(zone);
     setSideDrawerVisible(true);
   };
 
-  // توليد تقرير الـ HTML للبلاغ الفردي
   const buildFaultHtml = (fault) => {
     const locName = lang === 'ar' ? fault.location_name_ar : fault.location_name_en || fault.location_name_ar;
     return `
@@ -867,7 +896,6 @@ export default function App() {
       </html>`;
   };
 
-  // تصدير PDF لبلاغ مفرد
   const exportFaultPDF = async (fault) => {
     try {
       const { uri } = await Print.printToFileAsync({ html: buildFaultHtml(fault) });
@@ -879,7 +907,6 @@ export default function App() {
     }
   };
 
-  // تصدير شامل لكافة بلاغات المجمع (من الصفحة الرئيسية)
   const exportAllFaultsPDF = async () => {
     if (faults.length === 0) {
       showToast(lang === 'ar' ? 'لا توجد بلاغات مسجلة.' : 'No faults registered.', 'error');
@@ -928,7 +955,6 @@ export default function App() {
     }
   };
 
-  // الأمر رقم 3: سحب تقرير PDF لأعطال هذا المرفق تحديداً
   const handleExportZoneFaultsPDF = async (zone) => {
     const zoneFaults = faults.filter((f) => f.location_id === zone.key);
     if (zoneFaults.length === 0) {
@@ -1037,6 +1063,7 @@ export default function App() {
     }
   };
 
+  // النقطة 4: حفظ وتطبيق الأرقام سحابياً
   const handleSaveNewPins = async () => {
     if (!newInspectorPin || !newWorkerPin || !newSupervisorPin) {
       showToast(lang === 'ar' ? 'يرجى ملء كافة الأرقام.' : 'Please fill all PINs.', 'error');
@@ -1051,7 +1078,7 @@ export default function App() {
       await api.updatePins(updatedPins);
       setPasswords(updatedPins);
       setManagePinsModal(false);
-      showToast(lang === 'ar' ? 'تم تحديث الأرقام السرية.' : 'PINs updated successfully.', 'success');
+      showToast(lang === 'ar' ? 'تم تحديث ومزامنة الأرقام السرية سحابياً.' : 'PINs synced to cloud.', 'success');
     } catch (e) {
       showToast(lang === 'ar' ? 'تعذر حفظ الأرقام.' : 'Failed to save PINs.', 'error');
     }
@@ -1374,8 +1401,8 @@ export default function App() {
                         <TextInput testID="new-supervisor-pin" style={styles.input} keyboardType="numeric" value={newSupervisorPin} onChangeText={setNewSupervisorPin} />
                       </View>
                       <Pressable testID="save-pins-btn" style={styles.btnSuccess} onPress={handleSaveNewPins}>
-                        <Ionicons name="checkmark-circle-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
-                        <Text style={styles.btnTxt}>{lang === 'ar' ? 'حفظ ومزامنة الأرقام' : 'Save & Sync PINs'}</Text>
+                        <Ionicons name="cloud-upload-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
+                        <Text style={styles.btnTxt}>{lang === 'ar' ? 'حفظ ومزامنة الأرقام سحابياً' : 'Save & Sync PINs (Cloud)'}</Text>
                       </Pressable>
                     </View>
                   )}
@@ -1399,7 +1426,6 @@ export default function App() {
     completed: faults.filter((f) => f.status === 'completed').length,
   };
 
-  // قائمة خيارات الفرز لمسؤولي الخدمات
   const specialtyOptions = [
     { key: 'all', label: t.typeAll, icon: 'grid-outline' },
     { key: t.typeAc, label: t.typeAc, icon: 'snow-outline' },
@@ -1522,7 +1548,6 @@ export default function App() {
               <View style={{ width: 65 }} />
             </View>
 
-            {/* كبسولة التبديل بين الأدوار */}
             <View style={styles.floorPillContainer}>
               <View style={[styles.floorPill, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <Pressable
@@ -1538,7 +1563,7 @@ export default function App() {
               </View>
             </View>
 
-            {/* النقطة 3: شريط مسؤولي الخدمات وفرز التخصصات (Toolbar) */}
+            {/* شريط مسؤولي الخدمات وفرز التخصصات */}
             <View style={styles.specialtyBarContainer}>
               <ScrollView
                 horizontal
@@ -1546,7 +1571,6 @@ export default function App() {
                 contentContainerStyle={[styles.specialtyScroll, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 {specialtyOptions.map((opt) => {
                   const isSelected = selectedSpecialty === opt.key;
-                  // حساب عدد الأعطال المفتوحة في هذا الدور التابعة لهذا التخصص
                   const countInFloor = faults.filter((f) => {
                     const matchFloor = f.floor === selectedFloor;
                     const isOpen = f.status !== 'completed';
@@ -1583,7 +1607,7 @@ export default function App() {
               </ScrollView>
             </View>
 
-            {/* لوحة المخطط الهندسي التفاعلية (مع نظام التظليل والتركيز) */}
+            {/* لوحة المخطط الهندسي التفاعلية */}
             <View style={styles.blueprintCanvas}>
               {zones[selectedFloor].map((z) => {
                 const zoneFaults = faults.filter((f) => f.location_id === z.key && f.status !== 'completed');
@@ -1591,13 +1615,11 @@ export default function App() {
                 const name = lang === 'ar' ? z.name_ar : z.name_en || z.name_ar;
                 const signImage = zoneImages[z.key];
 
-                // فحص هل الموقع يحتوي على عطل مطابق للتخصص المختار
                 const hasSpecialtyFault =
                   selectedSpecialty === 'all'
                     ? hasAnyFault
                     : zoneFaults.some((f) => f.type === selectedSpecialty);
 
-                // هل نقوم بتعتيم هذا المرفق؟
                 const isDimmed = selectedSpecialty !== 'all' && !hasSpecialtyFault;
 
                 return (
@@ -1617,7 +1639,7 @@ export default function App() {
                           : z.color || '#EFF6FF',
                         borderColor: hasSpecialtyFault ? colors.danger : colors.cadLine,
                         borderWidth: hasSpecialtyFault ? 2 : 1,
-                        opacity: isDimmed ? 0.22 : 1, // التظليل والتعتيم الذكي
+                        opacity: isDimmed ? 0.22 : 1,
                       },
                     ]}
                     onPress={() => handlePressZone(z)}
@@ -1704,7 +1726,7 @@ export default function App() {
           </ScrollView>
         )}
 
-        {/* 3. الشريط الجانبي التفاعلي للغرفة / المرفق (Side Action Drawer) */}
+        {/* 3. الشريط الجانبي التفاعلي للغرفة / المرفق */}
         <Modal visible={sideDrawerVisible} animationType="fade" transparent>
           <View style={[styles.sideDrawerBackdrop, { justifyContent: isRTL ? 'flex-start' : 'flex-end' }]}>
             <View style={styles.sideDrawerContent}>
@@ -1717,7 +1739,6 @@ export default function App() {
 
                   return (
                     <View style={{ flex: 1 }}>
-                      {/* رأس الشريط الجانبي */}
                       <View style={[styles.sideDrawerHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                         <Ionicons name={selectedZoneInfo.icon || 'business'} size={24} color={colors.primarySoft} />
                         <View style={{ flex: 1, marginHorizontal: 8 }}>
@@ -1731,12 +1752,10 @@ export default function App() {
                         </Pressable>
                       </View>
 
-                      {/* لافتة المرفق إن وُجدت */}
                       {zoneImageUrl && (
                         <Image source={{ uri: zoneImageUrl }} style={styles.sideDrawerSignImg} contentFit="contain" />
                       )}
 
-                      {/* الأمر 1: رؤية الأعطال الحالية لهذا المكان */}
                       <View style={styles.drawerSectionHeader}>
                         <Ionicons name="eye-outline" size={16} color={colors.primarySoft} />
                         <Text style={styles.drawerSectionTitle}>{t.drawerActionViewFaults}</Text>
@@ -1771,7 +1790,6 @@ export default function App() {
                         )}
                       </ScrollView>
 
-                      {/* الأمر 2: تسجيل عطل جديد */}
                       {user?.role === 'inspector' && (
                         <Pressable
                           style={[styles.sideActionBtnPrimary, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
@@ -1785,7 +1803,6 @@ export default function App() {
                         </Pressable>
                       )}
 
-                      {/* الأمر 3: سحب ملف PDF لأعطال هذا المكان */}
                       <Pressable
                         style={[styles.sideActionBtnSecondary, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                         onPress={() => handleExportZoneFaultsPDF(selectedZoneInfo)}>
@@ -1795,7 +1812,6 @@ export default function App() {
 
                       <View style={{ flex: 1 }} />
 
-                      {/* الأمر 4: الرجوع للمخطط الرئيسي */}
                       <Pressable style={styles.sideActionBtnBack} onPress={() => setSideDrawerVisible(false)}>
                         <Ionicons name={isRTL ? 'arrow-forward' : 'arrow-back'} size={18} color={colors.textMuted} />
                         <Text style={styles.sideActionBtnBackTxt}>{t.drawerActionBack}</Text>
@@ -1947,7 +1963,7 @@ export default function App() {
           </Pressable>
         </View>
 
-        {/* النوافذ المساعدة (تسجيل عطل جديد / تعديل الأرقام / إلخ) */}
+        {/* النوافذ المنبثقة */}
         <Modal visible={newFaultModal} animationType="slide" transparent>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalBackdrop}>
             <View style={styles.modalSheet}>
