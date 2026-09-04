@@ -256,6 +256,7 @@ const STRINGS = {
     statusNew: 'جديد',
     statusProgress: 'قيد العمل',
     statusCompleted: 'تمت التسوية',
+    typeAll: 'الكل',
     typeAc: 'تكييف وتبريد',
     typeElec: 'كهرباء وإنارة',
     typePlumb: 'سباكة ومياه',
@@ -290,6 +291,7 @@ const STRINGS = {
     drawerActionExportPdf: 'الأمر 3: سحب ملف PDF لأعطال هذا المكان',
     drawerActionBack: 'الأمر 4: رجوع للمخطط الرئيسي',
     noActiveFaultsHere: 'المرفق سليم تماماً ولا توجد به أعطال نشطة حالياً.',
+    specialtyFilterHeader: 'فرز مسؤولي الخدمات (التظليل والتركيز):',
   },
   en: {
     appTitle: 'Zayed Educational Complex',
@@ -353,6 +355,7 @@ const STRINGS = {
     statusNew: 'New',
     statusProgress: 'In Progress',
     statusCompleted: 'Settled Successfully',
+    typeAll: 'All',
     typeAc: 'HVAC & Cooling',
     typeElec: 'Electrical & Lighting',
     typePlumb: 'Plumbing & Water',
@@ -387,6 +390,7 @@ const STRINGS = {
     drawerActionExportPdf: 'Command 3: Export PDF Report for Room',
     drawerActionBack: 'Command 4: Back to Floor Plan',
     noActiveFaultsHere: 'Facility is clear, no active issues found.',
+    specialtyFilterHeader: 'Service Managers Filter (Focus Mode):',
   },
 };
 
@@ -515,7 +519,10 @@ export default function App() {
   const lastActivityRef = useRef(Date.now());
   const IDLE_MS = 5 * 60 * 1000;
 
-  // الشريط الجانبي التفاعلي للغرف والمرافق
+  // النقطة 3: فلتر التخصص ومسؤول الخدمة (وضع التركيز والتظليل)
+  const [selectedSpecialty, setSelectedSpecialty] = useState('all');
+
+  // النقطة 2: الشريط الجانبي التفاعلي للغرفة / المرفق
   const [sideDrawerVisible, setSideDrawerVisible] = useState(false);
   const [selectedZoneInfo, setSelectedZoneInfo] = useState(null);
 
@@ -1392,6 +1399,16 @@ export default function App() {
     completed: faults.filter((f) => f.status === 'completed').length,
   };
 
+  // قائمة خيارات الفرز لمسؤولي الخدمات
+  const specialtyOptions = [
+    { key: 'all', label: t.typeAll, icon: 'grid-outline' },
+    { key: t.typeAc, label: t.typeAc, icon: 'snow-outline' },
+    { key: t.typeElec, label: t.typeElec, icon: 'flash-outline' },
+    { key: t.typePlumb, label: t.typePlumb, icon: 'water-outline' },
+    { key: t.typeFurn, label: t.typeFurn, icon: 'bed-outline' },
+    { key: t.typeEquip, label: t.typeEquip, icon: 'hardware-chip-outline' },
+  ];
+
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.safe} onStartShouldSetResponderCapture={() => { resetActivity(); return false; }}>
@@ -1521,13 +1538,67 @@ export default function App() {
               </View>
             </View>
 
-            {/* لوحة المخطط الهندسي التفاعلية */}
+            {/* النقطة 3: شريط مسؤولي الخدمات وفرز التخصصات (Toolbar) */}
+            <View style={styles.specialtyBarContainer}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={[styles.specialtyScroll, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                {specialtyOptions.map((opt) => {
+                  const isSelected = selectedSpecialty === opt.key;
+                  // حساب عدد الأعطال المفتوحة في هذا الدور التابعة لهذا التخصص
+                  const countInFloor = faults.filter((f) => {
+                    const matchFloor = f.floor === selectedFloor;
+                    const isOpen = f.status !== 'completed';
+                    const matchSpec = opt.key === 'all' || f.type === opt.key;
+                    return matchFloor && isOpen && matchSpec;
+                  }).length;
+
+                  return (
+                    <Pressable
+                      key={opt.key}
+                      style={[
+                        styles.specialtyChip,
+                        isSelected && styles.specialtyChipActive,
+                      ]}
+                      onPress={() => setSelectedSpecialty(opt.key)}>
+                      <Ionicons
+                        name={opt.icon}
+                        size={14}
+                        color={isSelected ? '#fff' : colors.primarySoft}
+                      />
+                      <Text style={[styles.specialtyChipTxt, isSelected && { color: '#fff', fontWeight: 'bold' }]}>
+                        {opt.label}
+                      </Text>
+                      {countInFloor > 0 && (
+                        <View style={[styles.specialtyBadge, isSelected && { backgroundColor: '#fff' }]}>
+                          <Text style={[styles.specialtyBadgeTxt, isSelected && { color: colors.danger }]}>
+                            {countInFloor}
+                          </Text>
+                        </View>
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            {/* لوحة المخطط الهندسي التفاعلية (مع نظام التظليل والتركيز) */}
             <View style={styles.blueprintCanvas}>
               {zones[selectedFloor].map((z) => {
                 const zoneFaults = faults.filter((f) => f.location_id === z.key && f.status !== 'completed');
-                const hasFault = zoneFaults.length > 0;
+                const hasAnyFault = zoneFaults.length > 0;
                 const name = lang === 'ar' ? z.name_ar : z.name_en || z.name_ar;
                 const signImage = zoneImages[z.key];
+
+                // فحص هل الموقع يحتوي على عطل مطابق للتخصص المختار
+                const hasSpecialtyFault =
+                  selectedSpecialty === 'all'
+                    ? hasAnyFault
+                    : zoneFaults.some((f) => f.type === selectedSpecialty);
+
+                // هل نقوم بتعتيم هذا المرفق؟
+                const isDimmed = selectedSpecialty !== 'all' && !hasSpecialtyFault;
 
                 return (
                   <Pressable
@@ -1539,9 +1610,14 @@ export default function App() {
                         top: `${(z.y / PLAN_H) * 100}%`,
                         width: `${(z.w / PLAN_W) * 100}%`,
                         height: `${(z.h / PLAN_H) * 100}%`,
-                        backgroundColor: hasFault ? '#FEE2E2' : signImage ? '#FFFFFF' : z.color || '#EFF6FF',
-                        borderColor: hasFault ? colors.danger : colors.cadLine,
-                        borderWidth: hasFault ? 2 : 1,
+                        backgroundColor: hasSpecialtyFault
+                          ? '#FEE2E2'
+                          : signImage
+                          ? '#FFFFFF'
+                          : z.color || '#EFF6FF',
+                        borderColor: hasSpecialtyFault ? colors.danger : colors.cadLine,
+                        borderWidth: hasSpecialtyFault ? 2 : 1,
+                        opacity: isDimmed ? 0.22 : 1, // التظليل والتعتيم الذكي
                       },
                     ]}
                     onPress={() => handlePressZone(z)}
@@ -1552,12 +1628,23 @@ export default function App() {
                     ) : (
                       <>
                         <Ionicons name={z.icon || 'business'} size={11} color={colors.primary} />
-                        <Text style={[styles.zoneTxt, hasFault && { color: colors.danger, fontWeight: 'bold' }]} numberOfLines={2}>{name}</Text>
+                        <Text
+                          style={[
+                            styles.zoneTxt,
+                            hasSpecialtyFault && { color: colors.danger, fontWeight: 'bold' },
+                          ]}
+                          numberOfLines={2}>
+                          {name}
+                        </Text>
                       </>
                     )}
-                    {hasFault && (
+                    {hasSpecialtyFault && (
                       <View style={styles.zoneBadge}>
-                        <Text style={styles.zoneBadgeTxt}>{zoneFaults.length}</Text>
+                        <Text style={styles.zoneBadgeTxt}>
+                          {selectedSpecialty === 'all'
+                            ? zoneFaults.length
+                            : zoneFaults.filter((f) => f.type === selectedSpecialty).length}
+                        </Text>
                       </View>
                     )}
                   </Pressable>
@@ -1571,26 +1658,42 @@ export default function App() {
               <View style={[styles.quickGrid, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 {zones[selectedFloor].map((z) => {
                   const zoneFaults = faults.filter((f) => f.location_id === z.key && f.status !== 'completed');
-                  const hasFault = zoneFaults.length > 0;
+                  const hasAnyFault = zoneFaults.length > 0;
                   const name = lang === 'ar' ? z.name_ar : z.name_en || z.name_ar;
                   const signImage = zoneImages[z.key];
+
+                  const hasSpecialtyFault =
+                    selectedSpecialty === 'all'
+                      ? hasAnyFault
+                      : zoneFaults.some((f) => f.type === selectedSpecialty);
+
+                  const isDimmed = selectedSpecialty !== 'all' && !hasSpecialtyFault;
 
                   return (
                     <Pressable
                       key={`quick_${z.key}`}
-                      style={[styles.quickCard, { borderColor: hasFault ? colors.danger : colors.border }, hasFault && { backgroundColor: '#FEF2F2' }]}
+                      style={[
+                        styles.quickCard,
+                        { borderColor: hasSpecialtyFault ? colors.danger : colors.border },
+                        hasSpecialtyFault && { backgroundColor: '#FEF2F2' },
+                        { opacity: isDimmed ? 0.35 : 1 },
+                      ]}
                       onPress={() => handlePressZone(z)}
                       onLongPress={() => handleLongPressZone(z)}
                       delayLongPress={500}>
                       {signImage ? (
                         <Image source={{ uri: signImage }} style={{ width: 26, height: 18, borderRadius: 4 }} contentFit="contain" />
                       ) : (
-                        <Ionicons name={z.icon || 'school'} size={15} color={hasFault ? colors.danger : colors.primarySoft} />
+                        <Ionicons name={z.icon || 'school'} size={15} color={hasSpecialtyFault ? colors.danger : colors.primarySoft} />
                       )}
-                      <Text style={[styles.quickCardTxt, hasFault && { color: colors.danger, fontWeight: 'bold' }]} numberOfLines={1}>{name}</Text>
-                      {hasFault && (
+                      <Text style={[styles.quickCardTxt, hasSpecialtyFault && { color: colors.danger, fontWeight: 'bold' }]} numberOfLines={1}>{name}</Text>
+                      {hasSpecialtyFault && (
                         <View style={[styles.zoneBadge, { position: 'relative', top: 0, right: 0 }]}>
-                          <Text style={styles.zoneBadgeTxt}>{zoneFaults.length}</Text>
+                          <Text style={styles.zoneBadgeTxt}>
+                            {selectedSpecialty === 'all'
+                              ? zoneFaults.length
+                              : zoneFaults.filter((f) => f.type === selectedSpecialty).length}
+                          </Text>
                         </View>
                       )}
                     </Pressable>
@@ -1946,10 +2049,6 @@ export default function App() {
                       <Text style={styles.btnTxt}>{t.completeRepairBtn}</Text>
                     </Pressable>
                   )}
-                  <Pressable testID="export-pdf-btn" style={styles.btnPdf} onPress={() => exportFaultPDF(activeFault)}>
-                    <Ionicons name="document-text-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
-                    <Text style={styles.btnTxt}>{t.exportPdfBtn}</Text>
-                  </Pressable>
                   {user.role === 'supervisor' && (
                     <Pressable testID="delete-fault-btn" style={styles.btnDanger} onPress={() => setConfirmDeleteId(activeFault.id)}>
                       <Ionicons name="trash-outline" size={16} color="#fff" style={{ marginRight: 6 }} />
@@ -2142,6 +2241,13 @@ const styles = StyleSheet.create({
   floorPillBtn: { paddingHorizontal: 16, paddingVertical: 5, borderRadius: 16 },
   floorPillBtnActive: { backgroundColor: colors.primarySoft },
   floorPillTxt: { fontSize: 11, fontWeight: 'bold', color: colors.textMuted },
+  specialtyBarContainer: { paddingHorizontal: 10, marginVertical: 4 },
+  specialtyScroll: { gap: 6, alignItems: 'center' },
+  specialtyChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#fff', paddingHorizontal: 9, paddingVertical: 5, borderRadius: 14, borderWidth: 1, borderColor: colors.border },
+  specialtyChipActive: { backgroundColor: colors.primarySoft, borderColor: colors.primarySoft },
+  specialtyChipTxt: { fontSize: 10.5, color: colors.text, fontWeight: '600' },
+  specialtyBadge: { backgroundColor: colors.danger, borderRadius: 8, paddingHorizontal: 5, paddingVertical: 1, minWidth: 16, alignItems: 'center', justifyContent: 'center' },
+  specialtyBadgeTxt: { color: '#fff', fontSize: 8.5, fontWeight: 'bold' },
   blueprintCanvas: { margin: 8, height: 420, backgroundColor: colors.blueprintBg, borderRadius: 8, borderWidth: 1.5, borderColor: colors.cadLine, overflow: 'hidden', position: 'relative' },
   zoneItem: { position: 'absolute', borderRadius: 4, alignItems: 'center', justifyContent: 'center', padding: 1, overflow: 'hidden' },
   zoneSignImage: { width: '100%', height: '100%', borderRadius: 3 },
@@ -2199,7 +2305,6 @@ const styles = StyleSheet.create({
   btnPrimary: { width: '100%', backgroundColor: colors.primarySoft, padding: 10, borderRadius: 6, alignItems: 'center', marginTop: 6 },
   btnSuccess: { backgroundColor: colors.success, padding: 10, borderRadius: 6, alignItems: 'center', marginTop: 6, flexDirection: 'row', justifyContent: 'center' },
   btnDanger: { backgroundColor: colors.danger, padding: 8, borderRadius: 6, alignItems: 'center', marginTop: 6, flexDirection: 'row', justifyContent: 'center' },
-  btnPdf: { backgroundColor: '#334155', padding: 10, borderRadius: 6, alignItems: 'center', marginTop: 6, flexDirection: 'row', justifyContent: 'center' },
   btnTxt: { color: '#fff', fontWeight: 'bold', fontSize: 12 },
   btnClose: { padding: 6, alignItems: 'center', marginTop: 2 },
   btnCloseTxt: { color: colors.textMuted, fontWeight: 'bold', fontSize: 11 },
