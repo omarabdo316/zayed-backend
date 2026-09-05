@@ -24,9 +24,6 @@ import * as Device from 'expo-device';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 
-// ============================================================================
-// إعدادات الاتصال السحابي (SUPABASE)
-// ============================================================================
 const SUPABASE_URL = 'https://igapdxtttqgtdpxajszy.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_secret_3Sk9SGLodKBjbEqsmACN3w_G8GDgIfr';
 
@@ -53,35 +50,6 @@ const storage = {
 
 const DEFAULT_PHOTO =
   'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=300&q=50';
-
-// دالة تحويل Base64 إلى ArrayBuffer متوافقة 100% مع أندرويد و React Native
-function decodeBase64ToArrayBuffer(base64) {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-  const lookup = new Uint8Array(256);
-  for (let i = 0; i < chars.length; i++) {
-    lookup[chars.charCodeAt(i)] = i;
-  }
-  let len = base64.length;
-  let placeHolders = 0;
-  if (base64[len - 1] === '=') placeHolders++;
-  if (base64[len - 2] === '=') placeHolders++;
-
-  const arrayLength = (len * 3) / 4 - placeHolders;
-  const bytes = new Uint8Array(arrayLength);
-
-  let cur = 0;
-  for (let i = 0; i < len; i += 4) {
-    const a = lookup[base64.charCodeAt(i)];
-    const b = lookup[base64.charCodeAt(i + 1)];
-    const c = lookup[base64.charCodeAt(i + 2)];
-    const d = lookup[base64.charCodeAt(i + 3)];
-
-    bytes[cur++] = (a << 2) | (b >> 4);
-    if (cur < arrayLength) bytes[cur++] = ((b & 15) << 4) | (c >> 2);
-    if (cur < arrayLength) bytes[cur++] = ((c & 3) << 6) | (d & 63);
-  }
-  return bytes.buffer;
-}
 
 const api = {
   getConfig: async () => {
@@ -180,16 +148,12 @@ const api = {
     return data || [];
   },
 
-  // حفظ البلاغ بدقة مع منع الأخطاء
   createFault: async (body) => {
     const { data, error } = await supabase
       .from('faults')
       .insert([body])
       .select();
-    if (error) {
-      console.error('Supabase createFault error:', error);
-      throw error;
-    }
+    if (error) throw error;
     return data?.[0] || body;
   },
 
@@ -246,35 +210,32 @@ const api = {
     } catch (e) {}
   },
 
-  // رفع الصورة بشكل مباشر ومضمون
-  async uploadImage(base64Data, uri = '') {
-    if (!base64Data) {
-      return uri || DEFAULT_PHOTO;
-    }
+  async uploadImage(uri) {
+    if (!uri) return DEFAULT_PHOTO;
     try {
-      const fileName = `photo_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.jpg`;
-      const arrayBuffer = decodeBase64ToArrayBuffer(base64Data);
+      const ext = (uri.split('.').pop() || 'jpg').toLowerCase();
+      const fileName = `fault_${Date.now()}.${ext === 'png' ? 'png' : 'jpg'}`;
 
-      const { error } = await supabase.storage
-        .from('fault-photos')
-        .upload(fileName, arrayBuffer, {
-          contentType: 'image/jpeg',
-          upsert: true,
-        });
+      const formData = new FormData();
+      formData.append('file', {
+        uri,
+        name: fileName,
+        type: `image/${ext === 'png' ? 'png' : 'jpeg'}`,
+      });
 
-      if (error) {
-        console.warn('Storage upload error, falling back to data URL:', error.message);
-        return `data:image/jpeg;base64,${base64Data}`;
-      }
+      const res = await fetch(`${SUPABASE_URL}/storage/v1/object/fault-photos/${fileName}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          apikey: SUPABASE_ANON_KEY,
+        },
+        body: formData,
+      });
 
-      const { data: urlData } = supabase.storage
-        .from('fault-photos')
-        .getPublicUrl(fileName);
-
-      return urlData.publicUrl;
-    } catch (error) {
-      console.error('Upload Error:', error);
-      return `data:image/jpeg;base64,${base64Data}`;
+      if (!res.ok) return DEFAULT_PHOTO;
+      return `${SUPABASE_URL}/storage/v1/object/public/fault-photos/${fileName}`;
+    } catch (e) {
+      return DEFAULT_PHOTO;
     }
   },
 };
@@ -1169,7 +1130,6 @@ export default function App() {
     }
   };
 
-  // دالة التقاط الصور المطورة بمعاينة فورية ورفع Base64 مباشر
   const pickImage = async (useCamera = true, isAfter = false) => {
     const perm = useCamera
       ? await ImagePicker.requestCameraPermissionsAsync()
@@ -1190,7 +1150,6 @@ export default function App() {
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.35,
-      base64: true, // ضروري جداً لضمان تحويل الصورة إلى بيانات مباشرة
     };
 
     const result = useCamera
@@ -1198,27 +1157,23 @@ export default function App() {
       : await ImagePicker.launchImageLibraryAsync(options);
 
     if (!result.canceled && result.assets && result.assets[0]) {
-      const asset = result.assets[0];
-      const localUri = asset.uri;
-      const b64 = asset.base64;
+      const localUri = result.assets[0].uri;
 
-      // معاينة فورية في الشاشة حتى يرى المستخدم الصورة دون أدنى تأخير
       if (!isAfter) {
         setCapturedBeforePhoto(localUri);
       }
 
       setUploadingPhoto(true);
       try {
-        const photoUrl = await api.uploadImage(b64, localUri);
+        const photoUrl = await api.uploadImage(localUri);
         if (isAfter) {
           await handleCompleteRepair(activeFault.id, photoUrl);
         } else {
           setCapturedBeforePhoto(photoUrl);
         }
       } catch (e) {
-        console.warn('Upload warning:', e);
-        if (!isAfter && b64) {
-          setCapturedBeforePhoto(`data:image/jpeg;base64,${b64}`);
+        if (!isAfter) {
+          setCapturedBeforePhoto(localUri);
         }
       } finally {
         setUploadingPhoto(false);
@@ -1240,13 +1195,12 @@ export default function App() {
       allowsEditing: true,
       aspect: [16, 9],
       quality: 0.5,
-      base64: true,
     });
 
     if (!result.canceled && result.assets && result.assets[0]) {
       setUploadingPhoto(true);
       try {
-        const cloudUrl = await api.uploadImage(result.assets[0].base64, result.assets[0].uri);
+        const cloudUrl = await api.uploadImage(result.assets[0].uri);
         const newImages = { ...zoneImages, [zone.key]: cloudUrl };
         setZoneImages(newImages);
         await api.saveZoneImages(newImages);
@@ -1259,7 +1213,6 @@ export default function App() {
     }
   };
 
-  // دالة حفظ وإرسال البلاغ مع إظهار أي خطأ مفصل إن وُجد
   const handleCreateFault = async () => {
     const loc = locationsList.find((l) => l.id === selectedLocId) || locationsList[0];
     if (!loc) {
@@ -2102,7 +2055,6 @@ export default function App() {
                   </Pressable>
                 </View>
 
-                {/* معاينة الصورة المباشرة - تظهر فوراً */}
                 {capturedBeforePhoto && (
                   <View style={{ marginVertical: 6, position: 'relative' }}>
                     <Image source={{ uri: capturedBeforePhoto }} style={styles.previewThumb} contentFit="cover" />
