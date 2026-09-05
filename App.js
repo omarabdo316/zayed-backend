@@ -52,10 +52,10 @@ const storage = {
 };
 
 const api = {
-  // النقطة 4: سحب الأرقام السرية سحابياً من Supabase
+  // النقطة 4: سحب ومزامنة الأرقام السرية
   getConfig: async () => {
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('system_config')
         .select('value')
         .eq('key', 'app_pins')
@@ -70,19 +70,80 @@ const api = {
     return savedPins ? { pins: savedPins } : {};
   },
 
-  // النقطة 4: حفظ ومزامنة الأرقام السرية سحابياً
   updatePins: async (pins) => {
     await storage.setItem('APP_PINS', pins);
     try {
-      const { error } = await supabase.from('system_config').upsert({
+      await supabase.from('system_config').upsert({
         key: 'app_pins',
         value: pins,
       });
+      return true;
+    } catch (e) {
+      return true;
+    }
+  },
+
+  // النقطة 5: نبضات الاتصال وفحص حالة الطرد لحظياً
+  heartbeat: async ({ device_id, role, device_type, device_name }) => {
+    try {
+      // 1. فحص هل صدر أمر فصل لهذا الجهاز
+      const { data: existing } = await supabase
+        .from('device_presence')
+        .select('is_kicked')
+        .eq('device_id', device_id)
+        .single();
+
+      if (existing?.is_kicked) {
+        return { kicked: true };
+      }
+
+      // 2. تحديث وقت النشاط للجهاز
+      await supabase.from('device_presence').upsert({
+        device_id,
+        role,
+        device_type,
+        device_name,
+        last_seen: new Date().toISOString(),
+        is_kicked: false,
+      });
+
+      return { success: true };
+    } catch (e) {
+      return { success: true };
+    }
+  },
+
+  // النقطة 5: جلب قائمة الأجهزة المتصلة خلال آخر 60 ثانية
+  getPresence: async () => {
+    try {
+      const pastWindow = new Date(Date.now() - 60 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from('device_presence')
+        .select('*')
+        .gte('last_seen', pastWindow)
+        .eq('is_kicked', false)
+        .order('last_seen', { ascending: false });
+
+      if (error) throw error;
+      return { devices: data || [] };
+    } catch (e) {
+      return { devices: [] };
+    }
+  },
+
+  // النقطة 5: فصل جهاز معين بواسطة المشرف
+  kickDevice: async (targetDeviceId) => {
+    try {
+      const { error } = await supabase
+        .from('device_presence')
+        .update({ is_kicked: true })
+        .eq('device_id', targetDeviceId);
+
       if (error) throw error;
       return true;
     } catch (e) {
-      console.error('Supabase PIN sync error:', e);
-      return true; // الاحتفاظ بالحفظ المحلي كبديل
+      console.error('Kick device error:', e);
+      throw e;
     }
   },
 
@@ -94,6 +155,7 @@ const api = {
     if (error) throw error;
     return data || [];
   },
+
   createFault: async (body) => {
     const { data, error } = await supabase
       .from('faults')
@@ -103,6 +165,7 @@ const api = {
     if (error) throw error;
     return data;
   },
+
   startRepair: async (id, worker_name) => {
     const { data, error } = await supabase
       .from('faults')
@@ -113,6 +176,7 @@ const api = {
     if (error) throw error;
     return data;
   },
+
   completeRepair: async (id, worker_name, after_photo) => {
     const { data, error } = await supabase
       .from('faults')
@@ -123,17 +187,15 @@ const api = {
     if (error) throw error;
     return data;
   },
+
   deleteFault: async (id) => {
     const { error } = await supabase.from('faults').delete().eq('id', id);
     if (error) throw error;
     return true;
   },
+
   seedZones: async (zones) => ({ zones }),
   addZone: async (floor, zone) => ({}),
-
-  heartbeat: async () => ({ success: true }),
-  getPresence: async () => ({ devices: [] }),
-  kickDevice: async () => true,
 
   async getZoneImages() {
     try {
@@ -167,7 +229,7 @@ const api = {
       const response = await fetch(uri);
       const arrayBuffer = await response.arrayBuffer();
 
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('fault-photos')
         .upload(fileName, arrayBuffer, {
           contentType: `image/${ext === 'png' ? 'png' : 'jpeg'}`,
@@ -545,10 +607,7 @@ export default function App() {
   const lastActivityRef = useRef(Date.now());
   const IDLE_MS = 5 * 60 * 1000;
 
-  // النقطة 3: شريط التخصصات ووضع التظليل الذكي
   const [selectedSpecialty, setSelectedSpecialty] = useState('all');
-
-  // النقطة 2: الشريط الجانبي التفاعلي للغرفة / المرفق
   const [sideDrawerVisible, setSideDrawerVisible] = useState(false);
   const [selectedZoneInfo, setSelectedZoneInfo] = useState(null);
 
@@ -559,7 +618,6 @@ export default function App() {
   const isFetchingRef = useRef(false);
   const faultsRef = useRef([]);
 
-  // النقطة 4: الرموز السرية الأساسية
   const [passwords, setPasswords] = useState({
     inspector: '1111',
     worker: '2222',
@@ -676,6 +734,7 @@ export default function App() {
     return { device_type: os, device_name: `${model} · ${os}${ver}` };
   };
 
+  // حلقة المزامنة اللحظية للأجهزة المتصلة والحضور
   useEffect(() => {
     if (!user) return;
     let mounted = true;
@@ -722,6 +781,7 @@ export default function App() {
     return () => clearInterval(iv);
   }, [user]);
 
+  // تنفيذ عملية فصل الجهاز
   const handleKickDevice = async () => {
     if (!confirmKickId) return;
     try {
@@ -785,6 +845,8 @@ export default function App() {
     try {
       const cfg = await api.getConfig();
       if (cfg.pins) setPasswords(cfg.pins);
+      const p = await api.getPresence();
+      if (p?.devices) setActiveDevices(p.devices);
     } catch (e) {}
     const imgs = await api.getZoneImages();
     if (imgs) setZoneImages(imgs);
@@ -1063,7 +1125,6 @@ export default function App() {
     }
   };
 
-  // النقطة 4: حفظ وتطبيق الأرقام سحابياً
   const handleSaveNewPins = async () => {
     if (!newInspectorPin || !newWorkerPin || !newSupervisorPin) {
       showToast(lang === 'ar' ? 'يرجى ملء كافة الأرقام.' : 'Please fill all PINs.', 'error');
@@ -2157,6 +2218,7 @@ export default function App() {
           </KeyboardAvoidingView>
         </Modal>
 
+        {/* النقطة 5: نافذة المتصلين الحية وزر الفصل للمشرف */}
         <Modal visible={presenceModal} animationType="slide" transparent>
           <View style={styles.modalBackdrop}>
             <View style={styles.modalSheet}>
@@ -2198,6 +2260,25 @@ export default function App() {
               </ScrollView>
               <Pressable style={styles.btnClose} onPress={() => setPresenceModal(false)}>
                 <Text style={styles.btnCloseTxt}>{t.back}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+
+        {/* تأكيد فصل الجهاز */}
+        <Modal visible={!!confirmKickId} animationType="fade" transparent>
+          <View style={styles.modalBackdrop}>
+            <View style={styles.authDialog}>
+              <View style={[styles.authIconWrap, { backgroundColor: colors.dangerSoft }]}>
+                <Ionicons name="power" size={26} color={colors.danger} />
+              </View>
+              <Text style={styles.authTitle}>{t.confirmKickTitle}</Text>
+              <Text style={styles.authSub}>{t.confirmKickSub}</Text>
+              <Pressable testID="confirm-kick-btn" style={styles.btnDanger} onPress={handleKickDevice}>
+                <Text style={styles.btnTxt}>{t.kickConfirmBtn}</Text>
+              </Pressable>
+              <Pressable style={styles.btnClose} onPress={() => setConfirmKickId(null)}>
+                <Text style={styles.btnCloseTxt}>{t.cancel}</Text>
               </Pressable>
             </View>
           </View>
