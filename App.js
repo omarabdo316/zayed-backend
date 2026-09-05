@@ -153,7 +153,10 @@ const api = {
       .from('faults')
       .insert([body])
       .select();
-    if (error) throw error;
+    if (error) {
+      console.error('Insert error:', error);
+      throw new Error(error.message || 'تعذر تسجيل البلاغ');
+    }
     return data?.[0] || body;
   },
 
@@ -232,10 +235,10 @@ const api = {
         body: formData,
       });
 
-      if (!res.ok) return DEFAULT_PHOTO;
+      if (!res.ok) return uri; // إذا تعذر الرفع السحابي يُستخدم المسار المباشر لضمان ظهور الصورة
       return `${SUPABASE_URL}/storage/v1/object/public/fault-photos/${fileName}`;
     } catch (e) {
-      return DEFAULT_PHOTO;
+      return uri || DEFAULT_PHOTO;
     }
   },
 };
@@ -978,7 +981,7 @@ export default function App() {
         <head><meta charset="utf-8" />
         <style>
           body { font-family: sans-serif; padding: 20px; color: #0F172A; }
-          .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #0284C7; padding-bottom: 10px; }
+          .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #0284C7; padding-bottom: 10px; margin-bottom: 15px; }
           table { width: 100%; border-collapse: collapse; margin-top: 15px; }
           th { background: #0F172A; color: #fff; padding: 8px; font-size: 12px; }
         </style></head>
@@ -1130,54 +1133,55 @@ export default function App() {
     }
   };
 
+  // التقاط الصور مع حماية ضد توقف الكاميرا
   const pickImage = async (useCamera = true, isAfter = false) => {
-    const perm = useCamera
-      ? await ImagePicker.requestCameraPermissionsAsync()
-      : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    try {
+      const perm = useCamera
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    if (!perm.granted) {
-      if (!perm.canAskAgain) {
-        showToast(lang === 'ar' ? 'يرجى تفعيل الإذن من الإعدادات.' : 'Please enable permission in Settings.', 'error');
-        Linking.openSettings();
-      } else {
-        showToast(lang === 'ar' ? 'يرجى السماح بالوصول للكاميرا/الصور.' : 'Permission required.', 'error');
-      }
-      return;
-    }
-
-    const options = {
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.35,
-    };
-
-    const result = useCamera
-      ? await ImagePicker.launchCameraAsync(options)
-      : await ImagePicker.launchImageLibraryAsync(options);
-
-    if (!result.canceled && result.assets && result.assets[0]) {
-      const localUri = result.assets[0].uri;
-
-      if (!isAfter) {
-        setCapturedBeforePhoto(localUri);
+      if (!perm.granted) {
+        showToast(lang === 'ar' ? 'يرجى تفعيل إذن الكاميرا/الصور من الإعدادات.' : 'Camera permission required.', 'error');
+        return;
       }
 
-      setUploadingPhoto(true);
-      try {
-        const photoUrl = await api.uploadImage(localUri);
-        if (isAfter) {
-          await handleCompleteRepair(activeFault.id, photoUrl);
-        } else {
-          setCapturedBeforePhoto(photoUrl);
-        }
-      } catch (e) {
+      // إلغاء القص التلقائي الذي يسبب تعليق الكاميرا
+      const options = {
+        allowsEditing: false,
+        quality: 0.35,
+      };
+
+      const result = useCamera
+        ? await ImagePicker.launchCameraAsync(options)
+        : await ImagePicker.launchImageLibraryAsync(options);
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const localUri = result.assets[0].uri;
+
+        // إظهار الصورة فوراً على الشاشة
         if (!isAfter) {
           setCapturedBeforePhoto(localUri);
         }
-      } finally {
-        setUploadingPhoto(false);
+
+        setUploadingPhoto(true);
+        try {
+          const photoUrl = await api.uploadImage(localUri);
+          if (isAfter) {
+            await handleCompleteRepair(activeFault.id, photoUrl);
+          } else {
+            setCapturedBeforePhoto(photoUrl);
+          }
+        } catch (e) {
+          if (!isAfter) {
+            setCapturedBeforePhoto(localUri);
+          }
+        } finally {
+          setUploadingPhoto(false);
+        }
       }
+    } catch (err) {
+      console.error('Camera open error:', err);
+      showToast(lang === 'ar' ? 'تعذر فتح الكاميرا.' : 'Error opening camera.', 'error');
     }
   };
 
@@ -1191,9 +1195,7 @@ export default function App() {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [16, 9],
+      allowsEditing: false,
       quality: 0.5,
     });
 
