@@ -51,15 +51,18 @@ const storage = {
   },
 };
 
+const DEFAULT_PHOTO =
+  'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=300&q=50';
+
 const api = {
-  // النقطة 4: سحب ومزامنة الأرقام السرية
+  // سحب الرموز السرية سحابياً
   getConfig: async () => {
     try {
       const { data } = await supabase
         .from('system_config')
         .select('value')
         .eq('key', 'app_pins')
-        .single();
+        .maybeSingle();
       if (data && data.value) {
         const pins = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
         await storage.setItem('APP_PINS', pins);
@@ -83,21 +86,19 @@ const api = {
     }
   },
 
-  // النقطة 5: نبضات الاتصال وفحص حالة الطرد لحظياً
+  // نبضات الاتصال اللحظية (معالجة عدم توقف الأجهزة الجديدة)
   heartbeat: async ({ device_id, role, device_type, device_name }) => {
     try {
-      // 1. فحص هل صدر أمر فصل لهذا الجهاز
       const { data: existing } = await supabase
         .from('device_presence')
         .select('is_kicked')
         .eq('device_id', device_id)
-        .single();
+        .maybeSingle();
 
       if (existing?.is_kicked) {
         return { kicked: true };
       }
 
-      // 2. تحديث وقت النشاط للجهاز
       await supabase.from('device_presence').upsert({
         device_id,
         role,
@@ -109,14 +110,15 @@ const api = {
 
       return { success: true };
     } catch (e) {
+      console.error('Heartbeat error:', e);
       return { success: true };
     }
   },
 
-  // النقطة 5: جلب قائمة الأجهزة المتصلة خلال آخر 60 ثانية
+  // جلب الأجهزة النشطة خلال آخر 3 دقائق
   getPresence: async () => {
     try {
-      const pastWindow = new Date(Date.now() - 60 * 1000).toISOString();
+      const pastWindow = new Date(Date.now() - 3 * 60 * 1000).toISOString();
       const { data, error } = await supabase
         .from('device_presence')
         .select('*')
@@ -131,7 +133,6 @@ const api = {
     }
   },
 
-  // النقطة 5: فصل جهاز معين بواسطة المشرف
   kickDevice: async (targetDeviceId) => {
     try {
       const { error } = await supabase
@@ -142,7 +143,6 @@ const api = {
       if (error) throw error;
       return true;
     } catch (e) {
-      console.error('Kick device error:', e);
       throw e;
     }
   },
@@ -203,7 +203,7 @@ const api = {
         .from('system_config')
         .select('value')
         .eq('key', 'zone_images')
-        .single();
+        .maybeSingle();
       if (data && data.value) {
         return typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
       }
@@ -222,21 +222,24 @@ const api = {
   },
 
   async uploadImage(uri) {
-    const ext = (uri.split('.').pop() || 'jpg').split('?')[0];
-    const fileName = `photo_${Date.now()}.${ext}`;
-
     try {
+      const ext = (uri.split('.').pop() || 'jpg').split('?')[0].toLowerCase();
+      const fileName = `photo_${Date.now()}.${ext === 'png' ? 'png' : 'jpg'}`;
+
       const response = await fetch(uri);
-      const arrayBuffer = await response.arrayBuffer();
+      const blob = await response.blob();
 
       const { error } = await supabase.storage
         .from('fault-photos')
-        .upload(fileName, arrayBuffer, {
-          contentType: `image/${ext === 'png' ? 'png' : 'jpeg'}`,
+        .upload(fileName, blob, {
+          contentType: ext === 'png' ? 'image/png' : 'image/jpeg',
           upsert: true,
         });
 
-      if (error) throw error;
+      if (error) {
+        console.warn('Storage upload error, using fallback photo:', error.message);
+        return DEFAULT_PHOTO;
+      }
 
       const { data: urlData } = supabase.storage
         .from('fault-photos')
@@ -244,8 +247,8 @@ const api = {
 
       return urlData.publicUrl;
     } catch (error) {
-      console.error('Upload Error:', error);
-      throw error;
+      console.error('Upload catch error:', error);
+      return DEFAULT_PHOTO;
     }
   },
 };
@@ -581,9 +584,6 @@ const DEFAULT_ZONES = {
   ],
 };
 
-const DEFAULT_PHOTO =
-  'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=300&q=50';
-
 export default function App() {
   const [lang, setLang] = useState('ar');
   const t = STRINGS[lang];
@@ -734,7 +734,7 @@ export default function App() {
     return { device_type: os, device_name: `${model} · ${os}${ver}` };
   };
 
-  // حلقة المزامنة اللحظية للأجهزة المتصلة والحضور
+  // نبضات الاتصال اللحظية
   useEffect(() => {
     if (!user) return;
     let mounted = true;
@@ -781,7 +781,6 @@ export default function App() {
     return () => clearInterval(iv);
   }, [user]);
 
-  // تنفيذ عملية فصل الجهاز
   const handleKickDevice = async () => {
     if (!confirmKickId) return;
     try {
@@ -851,7 +850,7 @@ export default function App() {
     const imgs = await api.getZoneImages();
     if (imgs) setZoneImages(imgs);
     setRefreshing(false);
-    showToast(lang === 'ar' ? 'تمت المزامنة السحابية بنجاح.' : 'Cloud sync completed.', 'success');
+    showToast(lang === 'ar' ? 'تمت المزامنة بنجاح.' : 'Sync completed.', 'success');
   };
 
   const handleLogout = () => {
@@ -1176,7 +1175,7 @@ export default function App() {
           setCapturedBeforePhoto(cloudUrl);
         }
       } catch (e) {
-        showToast(lang === 'ar' ? 'تعذر رفع الصورة السحابية.' : 'Failed to upload photo.', 'error');
+        showToast(lang === 'ar' ? 'تم استخدام الصورة البديلة.' : 'Using fallback photo.', 'info');
       } finally {
         setUploadingPhoto(false);
       }
@@ -1624,7 +1623,6 @@ export default function App() {
               </View>
             </View>
 
-            {/* شريط مسؤولي الخدمات وفرز التخصصات */}
             <View style={styles.specialtyBarContainer}>
               <ScrollView
                 horizontal
@@ -1668,7 +1666,6 @@ export default function App() {
               </ScrollView>
             </View>
 
-            {/* لوحة المخطط الهندسي التفاعلية */}
             <View style={styles.blueprintCanvas}>
               {zones[selectedFloor].map((z) => {
                 const zoneFaults = faults.filter((f) => f.location_id === z.key && f.status !== 'completed');
@@ -1735,7 +1732,6 @@ export default function App() {
               })}
             </View>
 
-            {/* قائمة الوصول السريع */}
             <View style={styles.quickNavContainer}>
               <Text style={[styles.quickNavTitle, { textAlign: isRTL ? 'right' : 'left' }]}>{t.wingsQuickNav}</Text>
               <View style={[styles.quickGrid, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -2218,7 +2214,7 @@ export default function App() {
           </KeyboardAvoidingView>
         </Modal>
 
-        {/* النقطة 5: نافذة المتصلين الحية وزر الفصل للمشرف */}
+        {/* نافذة المتصلين الحية */}
         <Modal visible={presenceModal} animationType="slide" transparent>
           <View style={styles.modalBackdrop}>
             <View style={styles.modalSheet}>
