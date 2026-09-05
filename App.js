@@ -54,8 +54,36 @@ const storage = {
 const DEFAULT_PHOTO =
   'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=300&q=50';
 
+// دالة تحويل Base64 إلى ArrayBuffer متوافقة 100% مع أندرويد و React Native
+function decodeBase64ToArrayBuffer(base64) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  const lookup = new Uint8Array(256);
+  for (let i = 0; i < chars.length; i++) {
+    lookup[chars.charCodeAt(i)] = i;
+  }
+  let len = base64.length;
+  let placeHolders = 0;
+  if (base64[len - 1] === '=') placeHolders++;
+  if (base64[len - 2] === '=') placeHolders++;
+
+  const arrayLength = (len * 3) / 4 - placeHolders;
+  const bytes = new Uint8Array(arrayLength);
+
+  let cur = 0;
+  for (let i = 0; i < len; i += 4) {
+    const a = lookup[base64.charCodeAt(i)];
+    const b = lookup[base64.charCodeAt(i + 1)];
+    const c = lookup[base64.charCodeAt(i + 2)];
+    const d = lookup[base64.charCodeAt(i + 3)];
+
+    bytes[cur++] = (a << 2) | (b >> 4);
+    if (cur < arrayLength) bytes[cur++] = ((b & 15) << 4) | (c >> 2);
+    if (cur < arrayLength) bytes[cur++] = ((c & 3) << 6) | (d & 63);
+  }
+  return bytes.buffer;
+}
+
 const api = {
-  // سحب الرموز السرية سحابياً
   getConfig: async () => {
     try {
       const { data } = await supabase
@@ -86,7 +114,6 @@ const api = {
     }
   },
 
-  // نبضات الاتصال اللحظية (معالجة عدم توقف الأجهزة الجديدة)
   heartbeat: async ({ device_id, role, device_type, device_name }) => {
     try {
       const { data: existing } = await supabase
@@ -110,12 +137,10 @@ const api = {
 
       return { success: true };
     } catch (e) {
-      console.error('Heartbeat error:', e);
       return { success: true };
     }
   },
 
-  // جلب الأجهزة النشطة خلال آخر 3 دقائق
   getPresence: async () => {
     try {
       const pastWindow = new Date(Date.now() - 3 * 60 * 1000).toISOString();
@@ -139,7 +164,6 @@ const api = {
         .from('device_presence')
         .update({ is_kicked: true })
         .eq('device_id', targetDeviceId);
-
       if (error) throw error;
       return true;
     } catch (e) {
@@ -156,14 +180,17 @@ const api = {
     return data || [];
   },
 
+  // حفظ البلاغ بدقة مع منع الأخطاء
   createFault: async (body) => {
     const { data, error } = await supabase
       .from('faults')
       .insert([body])
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+      .select();
+    if (error) {
+      console.error('Supabase createFault error:', error);
+      throw error;
+    }
+    return data?.[0] || body;
   },
 
   startRepair: async (id, worker_name) => {
@@ -171,10 +198,9 @@ const api = {
       .from('faults')
       .update({ status: 'in_progress', worker_name })
       .eq('id', id)
-      .select()
-      .single();
+      .select();
     if (error) throw error;
-    return data;
+    return data?.[0] || {};
   },
 
   completeRepair: async (id, worker_name, after_photo) => {
@@ -182,10 +208,9 @@ const api = {
       .from('faults')
       .update({ status: 'completed', worker_name, after_photo })
       .eq('id', id)
-      .select()
-      .single();
+      .select();
     if (error) throw error;
-    return data;
+    return data?.[0] || {};
   },
 
   deleteFault: async (id) => {
@@ -221,24 +246,25 @@ const api = {
     } catch (e) {}
   },
 
-  async uploadImage(uri) {
+  // رفع الصورة بشكل مباشر ومضمون
+  async uploadImage(base64Data, uri = '') {
+    if (!base64Data) {
+      return uri || DEFAULT_PHOTO;
+    }
     try {
-      const ext = (uri.split('.').pop() || 'jpg').split('?')[0].toLowerCase();
-      const fileName = `photo_${Date.now()}.${ext === 'png' ? 'png' : 'jpg'}`;
-
-      const response = await fetch(uri);
-      const blob = await response.blob();
+      const fileName = `photo_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.jpg`;
+      const arrayBuffer = decodeBase64ToArrayBuffer(base64Data);
 
       const { error } = await supabase.storage
         .from('fault-photos')
-        .upload(fileName, blob, {
-          contentType: ext === 'png' ? 'image/png' : 'image/jpeg',
+        .upload(fileName, arrayBuffer, {
+          contentType: 'image/jpeg',
           upsert: true,
         });
 
       if (error) {
-        console.warn('Storage upload error, using fallback photo:', error.message);
-        return DEFAULT_PHOTO;
+        console.warn('Storage upload error, falling back to data URL:', error.message);
+        return `data:image/jpeg;base64,${base64Data}`;
       }
 
       const { data: urlData } = supabase.storage
@@ -247,8 +273,8 @@ const api = {
 
       return urlData.publicUrl;
     } catch (error) {
-      console.error('Upload catch error:', error);
-      return DEFAULT_PHOTO;
+      console.error('Upload Error:', error);
+      return `data:image/jpeg;base64,${base64Data}`;
     }
   },
 };
@@ -361,7 +387,7 @@ const STRINGS = {
     deleteFault: 'حذف البلاغ',
     refreshData: 'مزامنة 🔄',
     langBtn: 'English',
-    uploading: 'جارٍ الرفع...',
+    uploading: 'جارٍ الرفع والمعاينة...',
     actionPresence: 'المتصلين الآن',
     livePresenceTitle: 'المتصلين بالمنظومة',
     livePresenceSub: 'المستخدمون النشطون في المنظومة لحظياً',
@@ -460,7 +486,7 @@ const STRINGS = {
     deleteFault: 'Delete Record',
     refreshData: 'Sync 🔄',
     langBtn: 'العربية',
-    uploading: 'Uploading...',
+    uploading: 'Uploading & Previewing...',
     actionPresence: 'Live Devices',
     livePresenceTitle: 'Connected Users',
     livePresenceSub: 'Users active in the system right now',
@@ -689,7 +715,7 @@ export default function App() {
 
   const showToast = (msg, type = 'info') => {
     setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 3500);
   };
 
   useEffect(() => {
@@ -734,7 +760,6 @@ export default function App() {
     return { device_type: os, device_name: `${model} · ${os}${ver}` };
   };
 
-  // نبضات الاتصال اللحظية
   useEffect(() => {
     if (!user) return;
     let mounted = true;
@@ -936,12 +961,12 @@ export default function App() {
             <p class="subtitle">${lang === 'ar' ? 'تقرير حالة بلاغ صيانة معتمد' : 'Certified Maintenance Status Report'}</p>
           </div>
           <div class="box">
-            <div class="row"><span class="label">${lang === 'ar' ? 'رقم البلاغ:' : 'Fault ID:'}</span><span>#${fault.display_id || fault.id.slice(-4)}</span></div>
+            <div class="row"><span class="label">${lang === 'ar' ? 'رقم البلاغ:' : 'Fault ID:'}</span><span>#${fault.display_id || fault.id?.slice(-4) || '1'}</span></div>
             <div class="row"><span class="label">${lang === 'ar' ? 'الموقع بالمجمع:' : 'Location:'}</span><span>${locName} (${fault.floor === 'ground' ? t.floorGround : t.floorUpper})</span></div>
             <div class="row"><span class="label">${lang === 'ar' ? 'تصنيف العطل:' : 'Category:'}</span><span>${fault.type}</span></div>
             <div class="row"><span class="label">${lang === 'ar' ? 'مستوى الأهمية:' : 'Priority:'}</span><span>${fault.priority === 'high' ? t.prioHigh : fault.priority === 'medium' ? t.prioMedium : t.prioLow}</span></div>
             <div class="row"><span class="label">${lang === 'ar' ? 'حالة البلاغ:' : 'Status:'}</span><span>${fault.status === 'completed' ? t.statusCompleted : fault.status === 'in_progress' ? t.statusProgress : t.statusNew}</span></div>
-            <div class="row"><span class="label">${lang === 'ar' ? 'مقدم البلاغ:' : 'Reporter:'}</span><span>${fault.reporter_name} (${fault.created_at})</span></div>
+            <div class="row"><span class="label">${lang === 'ar' ? 'مقدم البلاغ:' : 'Reporter:'}</span><span>${fault.reporter_name} (${fault.created_at || ''})</span></div>
             ${fault.worker_name ? `<div class="row"><span class="label">${lang === 'ar' ? 'مسؤول التسوية:' : 'Settled By:'}</span><span>${fault.worker_name}</span></div>` : ''}
             <div class="row"><span class="label">${lang === 'ar' ? 'ملاحظات العطل:' : 'Notes:'}</span><span>${fault.note}</span></div>
           </div>
@@ -983,7 +1008,7 @@ export default function App() {
         <td style="padding: 8px;">${f.priority === 'high' ? t.prioHigh : f.priority === 'medium' ? t.prioMedium : t.prioLow}</td>
         <td style="padding: 8px;">${f.status === 'completed' ? t.statusCompleted : f.status === 'in_progress' ? t.statusProgress : t.statusNew}</td>
         <td style="padding: 8px;">${f.reporter_name}</td>
-        <td style="padding: 8px;">${f.created_at}</td>
+        <td style="padding: 8px;">${f.created_at || ''}</td>
       </tr>`
       )
       .join('');
@@ -1032,7 +1057,7 @@ export default function App() {
           <span>بلاغ #${f.display_id || idx + 1} - ${f.type}</span>
           <span style="color: ${f.status === 'completed' ? '#10B981' : '#EF4444'}">${f.status === 'completed' ? 'تمت التسوية' : 'قيد العمل'}</span>
         </div>
-        <p style="margin: 4px 0; font-size: 13px; color: #475569;">المفتش: ${f.reporter_name} | التاريخ: ${f.created_at}</p>
+        <p style="margin: 4px 0; font-size: 13px; color: #475569;">المفتش: ${f.reporter_name} | التاريخ: ${f.created_at || ''}</p>
         ${f.note ? `<p style="margin: 4px 0; font-size: 13px;">ملاحظات: ${f.note}</p>` : ''}
         <div style="display: flex; gap: 10px; margin-top: 8px;">
           <div style="width: 48%; text-align: center;">
@@ -1144,6 +1169,7 @@ export default function App() {
     }
   };
 
+  // دالة التقاط الصور المطورة بمعاينة فورية ورفع Base64 مباشر
   const pickImage = async (useCamera = true, isAfter = false) => {
     const perm = useCamera
       ? await ImagePicker.requestCameraPermissionsAsync()
@@ -1154,28 +1180,46 @@ export default function App() {
         showToast(lang === 'ar' ? 'يرجى تفعيل الإذن من الإعدادات.' : 'Please enable permission in Settings.', 'error');
         Linking.openSettings();
       } else {
-        showToast(lang === 'ar' ? 'يرجى السماح بالوصول.' : 'Permission required.', 'error');
+        showToast(lang === 'ar' ? 'يرجى السماح بالوصول للكاميرا/الصور.' : 'Permission required.', 'error');
       }
       return;
     }
 
-    const options = { mediaTypes: ['images'], allowsEditing: true, aspect: [4, 3], quality: 0.5 };
+    const options = {
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.35,
+      base64: true, // ضروري جداً لضمان تحويل الصورة إلى بيانات مباشرة
+    };
+
     const result = useCamera
       ? await ImagePicker.launchCameraAsync(options)
       : await ImagePicker.launchImageLibraryAsync(options);
 
-    if (!result.canceled && result.assets[0]) {
-      const imgUri = result.assets[0].uri;
+    if (!result.canceled && result.assets && result.assets[0]) {
+      const asset = result.assets[0];
+      const localUri = asset.uri;
+      const b64 = asset.base64;
+
+      // معاينة فورية في الشاشة حتى يرى المستخدم الصورة دون أدنى تأخير
+      if (!isAfter) {
+        setCapturedBeforePhoto(localUri);
+      }
+
       setUploadingPhoto(true);
       try {
-        const cloudUrl = await api.uploadImage(imgUri);
+        const photoUrl = await api.uploadImage(b64, localUri);
         if (isAfter) {
-          await handleCompleteRepair(activeFault.id, cloudUrl);
+          await handleCompleteRepair(activeFault.id, photoUrl);
         } else {
-          setCapturedBeforePhoto(cloudUrl);
+          setCapturedBeforePhoto(photoUrl);
         }
       } catch (e) {
-        showToast(lang === 'ar' ? 'تم استخدام الصورة البديلة.' : 'Using fallback photo.', 'info');
+        console.warn('Upload warning:', e);
+        if (!isAfter && b64) {
+          setCapturedBeforePhoto(`data:image/jpeg;base64,${b64}`);
+        }
       } finally {
         setUploadingPhoto(false);
       }
@@ -1195,13 +1239,14 @@ export default function App() {
       mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [16, 9],
-      quality: 0.6,
+      quality: 0.5,
+      base64: true,
     });
 
-    if (!result.canceled && result.assets[0]) {
+    if (!result.canceled && result.assets && result.assets[0]) {
       setUploadingPhoto(true);
       try {
-        const cloudUrl = await api.uploadImage(result.assets[0].uri);
+        const cloudUrl = await api.uploadImage(result.assets[0].base64, result.assets[0].uri);
         const newImages = { ...zoneImages, [zone.key]: cloudUrl };
         setZoneImages(newImages);
         await api.saveZoneImages(newImages);
@@ -1214,6 +1259,7 @@ export default function App() {
     }
   };
 
+  // دالة حفظ وإرسال البلاغ مع إظهار أي خطأ مفصل إن وُجد
   const handleCreateFault = async () => {
     const loc = locationsList.find((l) => l.id === selectedLocId) || locationsList[0];
     if (!loc) {
@@ -1222,7 +1268,7 @@ export default function App() {
     }
     setLoading(true);
     try {
-      const created = await api.createFault({
+      const faultPayload = {
         location_id: loc.id,
         location_name_ar: loc.name_ar,
         location_name_en: loc.name_en,
@@ -1230,16 +1276,23 @@ export default function App() {
         type: selectedType,
         priority: selectedPriority,
         reporter_name: reporterName.trim() || user?.name || (lang === 'ar' ? 'مفتش' : 'Inspector'),
-        note: faultNote.trim(),
+        note: faultNote.trim() || '',
         before_photo: capturedBeforePhoto || DEFAULT_PHOTO,
-      });
+      };
+
+      const created = await api.createFault(faultPayload);
       await fetchFaults();
       setNewFaultModal(false);
       setFaultNote('');
       setCapturedBeforePhoto(null);
-      showToast(`${lang === 'ar' ? 'تم تسجيل البلاغ رقم' : 'Logged report #'}${created.display_id || ''} ${lang === 'ar' ? 'بنجاح.' : 'successfully.'}`, 'success');
+      showToast(
+        `${lang === 'ar' ? 'تم تسجيل البلاغ بنجاح' : 'Logged report successfully'} #${created?.display_id || ''}`,
+        'success'
+      );
     } catch (e) {
-      showToast(lang === 'ar' ? 'تعذر إرسال البلاغ.' : 'Failed to send report.', 'error');
+      console.error('Create fault error details:', e);
+      const msg = e?.message || (lang === 'ar' ? 'تعذر إرسال البلاغ.' : 'Failed to send report.');
+      showToast(msg, 'error');
     } finally {
       setLoading(false);
     }
@@ -1836,7 +1889,7 @@ export default function App() {
                               <View style={{ flex: 1, marginHorizontal: 6 }}>
                                 <Text style={[styles.drawerFaultType, { textAlign: isRTL ? 'right' : 'left' }]}>{f.type}</Text>
                                 <Text style={[styles.drawerFaultReporter, { textAlign: isRTL ? 'right' : 'left' }]}>
-                                  {f.reporter_name} · #{f.display_id || f.id.slice(-4)}
+                                  {f.reporter_name} · #{f.display_id || f.id?.slice(-4) || ''}
                                 </Text>
                               </View>
                               <View style={[styles.statusTag, { backgroundColor: colors.dangerSoft }]}>
@@ -1926,7 +1979,7 @@ export default function App() {
                     <Image source={{ uri: item.before_photo }} style={styles.faultThumb} contentFit="cover" />
                     <View style={{ flex: 1 }}>
                       <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Text style={[styles.faultLoc, { textAlign: isRTL ? 'right' : 'left' }]}>#{item.display_id || item.id.slice(-4)} - {locName}</Text>
+                        <Text style={[styles.faultLoc, { textAlign: isRTL ? 'right' : 'left' }]}>#{item.display_id || item.id?.slice(-4) || ''} - {locName}</Text>
                         <View style={[styles.priorityBadge, { backgroundColor: pInfo.bg }]}>
                           <Text style={[styles.priorityTxt, { color: pInfo.color }]}>{pInfo.label}</Text>
                         </View>
@@ -2048,17 +2101,20 @@ export default function App() {
                     <Text style={styles.photoActionTxt}>{t.fromGallery}</Text>
                   </Pressable>
                 </View>
-                {uploadingPhoto && (
-                  <View style={styles.uploadingRow}>
-                    <ActivityIndicator color={colors.primarySoft} />
-                    <Text style={styles.uploadingTxt}>{t.uploading}</Text>
-                  </View>
-                )}
+
+                {/* معاينة الصورة المباشرة - تظهر فوراً */}
                 {capturedBeforePhoto && (
-                  <View style={{ marginVertical: 4 }}>
+                  <View style={{ marginVertical: 6, position: 'relative' }}>
                     <Image source={{ uri: capturedBeforePhoto }} style={styles.previewThumb} contentFit="cover" />
+                    {uploadingPhoto && (
+                      <View style={styles.previewUploadingOverlay}>
+                        <ActivityIndicator color="#fff" size="small" />
+                        <Text style={styles.previewUploadingTxt}>{t.uploading}</Text>
+                      </View>
+                    )}
                   </View>
                 )}
+
                 <Text style={[styles.inputLabel, { textAlign: isRTL ? 'right' : 'left' }]}>{t.faultTypeLabel}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 4 }} contentContainerStyle={{ alignItems: 'center' }}>
                   {faultTypes.map((typeName) => (
@@ -2077,7 +2133,7 @@ export default function App() {
                 </View>
                 <TextInput testID="reporter-name-input" style={[styles.input, { textAlign: isRTL ? 'right' : 'left' }]} placeholder={t.reporterNamePlaceholder} value={reporterName} onChangeText={setReporterName} />
                 <TextInput testID="fault-note-input" style={[styles.input, { height: 60, textAlign: isRTL ? 'right' : 'left' }]} placeholder={t.faultNotePlaceholder} multiline value={faultNote} onChangeText={setFaultNote} />
-                <Pressable testID="save-fault-btn" style={styles.btnPrimary} onPress={handleCreateFault} disabled={loading || uploadingPhoto}>
+                <Pressable testID="save-fault-btn" style={styles.btnPrimary} onPress={handleCreateFault} disabled={loading}>
                   {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnTxt}>{t.saveFaultBtn}</Text>}
                 </Pressable>
                 <Pressable style={styles.btnClose} onPress={() => setNewFaultModal(false)}>
@@ -2094,9 +2150,9 @@ export default function App() {
               {activeFault && (
                 <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
                   <Text style={[styles.modalTitle, { textAlign: isRTL ? 'right' : 'left' }]}>
-                    #{activeFault.display_id || activeFault.id.slice(-4)} - {lang === 'ar' ? activeFault.location_name_ar : activeFault.location_name_en || activeFault.location_name_ar}
+                    #{activeFault.display_id || activeFault.id?.slice(-4) || ''} - {lang === 'ar' ? activeFault.location_name_ar : activeFault.location_name_en || activeFault.location_name_ar}
                   </Text>
-                  <Text style={[styles.faultSub, { textAlign: isRTL ? 'right' : 'left' }]}>{activeFault.type} · {activeFault.created_at}</Text>
+                  <Text style={[styles.faultSub, { textAlign: isRTL ? 'right' : 'left' }]}>{activeFault.type} · {activeFault.created_at || ''}</Text>
                   <Text style={[styles.imgLabel, { textAlign: isRTL ? 'right' : 'left' }]}>{t.beforeImgLabel}</Text>
                   <Image source={{ uri: activeFault.before_photo }} style={styles.modalImg} contentFit="cover" />
                   {activeFault.after_photo && (
@@ -2410,7 +2466,9 @@ const styles = StyleSheet.create({
   inputLabel: { fontSize: 11, fontWeight: 'bold', color: colors.text, marginTop: 4 },
   photoActionBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 6, borderRadius: 6, backgroundColor: colors.slate100, borderWidth: 1, borderColor: colors.border, gap: 4 },
   photoActionTxt: { fontSize: 10, fontWeight: 'bold', color: colors.primarySoft },
-  previewThumb: { width: '100%', height: 80, borderRadius: 6, marginVertical: 4, backgroundColor: colors.slate100 },
+  previewThumb: { width: '100%', height: 95, borderRadius: 6, backgroundColor: colors.slate100 },
+  previewUploadingOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 6, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 },
+  previewUploadingTxt: { color: '#fff', fontSize: 10.5, fontWeight: 'bold' },
   uploadingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginVertical: 4 },
   uploadingTxt: { color: colors.primarySoft, fontWeight: 'bold', fontSize: 11 },
   emptyWrap: { alignItems: 'center', justifyContent: 'center', paddingVertical: 30, gap: 6 },
