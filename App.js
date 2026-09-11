@@ -17,21 +17,20 @@ import { Ionicons } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// البيانات الهندسية المحدثة وفق التوزيع الواقعي للمخطط المعماري
-const INITIAL_BLUEPRINT_ROOMS = {
-  // 1. الجناح الأيسر (صفوف 1 - 5)
+// 1. التوزيع المعماري الدقيق (اليسار: 1-5 | الوسط: الخدمات والمسابح | اليمين: 3-6)
+const INITIAL_ROOMS_DATA = {
   left_wing: [
-    { id: 'l_g5_1', name: 'الصف الخامس 4', type: 'class', block: 'الخامس', fireExt: true },
+    { id: 'l_g5_1', name: 'الصف الخامس 4', type: 'class', block: 'الخامس' },
     { id: 'l_g5_2', name: 'الصف الخامس 5', type: 'class', block: 'الخامس' },
     { id: 'l_g5_3', name: 'الصف الخامس 6', type: 'class', block: 'الخامس' },
-    { id: 'l_g5_adm', name: 'الإدارة', type: 'admin', block: 'الخامس' },
+    { id: 'l_g5_adm', name: 'إدارة الجناح', type: 'admin', block: 'الخامس' },
     { id: 'l_g5_sup', name: 'مشرف / مخزن', type: 'store', block: 'الخامس' },
     { id: 'l_g5_4', name: 'الصف الخامس 3', type: 'class', block: 'الخامس' },
     { id: 'l_g5_5', name: 'الصف الخامس 2', type: 'class', block: 'الخامس' },
     { id: 'l_g5_6', name: 'الصف الخامس 1', type: 'class', block: 'الخامس' },
     { id: 'l_g5_tea', name: 'غرفة المعلمين', type: 'teachers', block: 'الخامس' },
     { id: 'l_g5_wc', name: 'دورة مياه', type: 'wc', block: 'الخامس' },
-    { id: 'l_yard_1', name: '⚽ ساحة ومضمار الأنشطة 1', type: 'yard', block: 'الساحات', isEmergencyExit: true },
+    { id: 'l_yard_1', name: '⚽ ساحة ومضمار الأنشطة 1', type: 'yard', block: 'الساحات' },
     { id: 'l_g2_1', name: 'الصف الثاني 5', type: 'class', block: 'الثاني' },
     { id: 'l_g2_2', name: 'الصف الثاني 3', type: 'class', block: 'الثاني' },
     { id: 'l_g2_3', name: 'الصف الثاني 1', type: 'class', block: 'الثاني' },
@@ -39,9 +38,9 @@ const INITIAL_BLUEPRINT_ROOMS = {
     { id: 'l_g2_spe', name: 'قسم التربية الخاصة', type: 'special', block: 'الثاني' },
     { id: 'l_g2_4', name: 'الصف الثاني 4', type: 'class', block: 'الثاني' },
     { id: 'l_g2_5', name: 'الصف الثاني 2', type: 'class', block: 'الثاني' },
-    { id: 'l_g2_tea', name: 'غرفة المعلمين', type: 'teachers', block: 'الثاني', fireExt: true },
+    { id: 'l_g2_tea', name: 'غرفة المعلمين', type: 'teachers', block: 'الثاني' },
     { id: 'l_g2_wc', name: 'دورة مياه', type: 'wc', block: 'الثاني' },
-    { id: 'l_play_1', name: '👶 ساحة المظلات وألعاب الأطفال 1', type: 'yard', block: 'الساحات', isEmergencyExit: true },
+    { id: 'l_play_1', name: '👶 ساحة المظلات وألعاب الأطفال 1', type: 'yard', block: 'الساحات' },
     { id: 'l_g1_1', name: 'الصف الأول 5', type: 'class', block: 'الأول' },
     { id: 'l_g1_2', name: 'الصف الأول 3', type: 'class', block: 'الأول' },
     { id: 'l_g1_3', name: 'الصف الأول 1', type: 'class', block: 'الأول' },
@@ -50,41 +49,37 @@ const INITIAL_BLUEPRINT_ROOMS = {
     { id: 'l_g1_5', name: 'الصف الأول 2', type: 'class', block: 'الأول' },
     { id: 'l_g1_tea', name: 'غرفة المعلمين', type: 'teachers', block: 'الأول' },
   ],
-
-  // 2. القطاع الأوسط (الخدمات والمرافق المركزية)
   center_wing: [
-    { id: 'c_cafe_l', name: 'كافتيريا (يسار)', type: 'cafe', fireExt: true },
+    { id: 'c_cafe_l', name: 'كافتيريا (يسار)', type: 'cafe' },
     { id: 'c_serv', name: 'خدمات الكافتيريا ومصلى', type: 'services' },
-    { id: 'c_cafe_r', name: 'كافتيريا (يمين)', type: 'cafe', fireExt: true },
+    { id: 'c_cafe_r', name: 'كافتيريا (يمين)', type: 'cafe' },
     { id: 'c_lec_l', name: 'غرفة المحاضرات 1', type: 'theater' },
     { id: 'c_wc_mid', name: 'دورات مياه مركزية', type: 'wc' },
     { id: 'c_lec_r', name: 'غرفة المحاضرات 2', type: 'theater' },
     { id: 'c_music_1', name: 'غرفة الموسيقى 1', type: 'special' },
     { id: 'c_music_2', name: 'غرفة الموسيقى 2', type: 'special' },
-    { id: 'c_pool', name: '🏊 المسبح الرياضي والمدرجات', type: 'pool', isEmergencyExit: true },
-    { id: 'c_gym', name: '🏋️ الصالة الرياضية والمدرجات', type: 'gym', isEmergencyExit: true, fireExt: true },
-    { id: 'c_sci_2', name: 'مختبر العلوم 2', type: 'lab', fireExt: true },
-    { id: 'c_comp_2', name: 'مختبر الحاسوب 2', type: 'lab', fireExt: true },
+    { id: 'c_pool', name: '🏊 المسبح الرياضي والمدرجات', type: 'pool' },
+    { id: 'c_gym', name: '🏋️ الصالة الرياضية والمدرجات', type: 'gym' },
+    { id: 'c_sci_2', name: 'مختبر العلوم 2', type: 'lab' },
+    { id: 'c_comp_2', name: 'مختبر الحاسوب 2', type: 'lab' },
     { id: 'c_comp_1', name: 'مختبر الحاسوب 1', type: 'lab' },
-    { id: 'c_sci_1', name: 'مختبر العلوم 1', type: 'lab', fireExt: true },
+    { id: 'c_sci_1', name: 'مختبر العلوم 1', type: 'lab' },
     { id: 'c_admin_1', name: 'مكتب الإدارة العامة', type: 'admin' },
-    { id: 'c_recept', name: 'الاستقبال الرئيسي', type: 'admin', isEmergencyExit: true },
+    { id: 'c_recept', name: 'الاستقبال الرئيسي', type: 'admin' },
     { id: 'c_admin_2', name: 'الإدارة وشؤون الطلاب', type: 'admin' },
   ],
-
-  // 3. الجناح الأيمن (صفوف 3 - 6)
   right_wing: [
-    { id: 'r_g6_adm', name: 'الإدارة', type: 'admin', block: 'السادس' },
+    { id: 'r_g6_adm', name: 'إدارة الجناح', type: 'admin', block: 'السادس' },
     { id: 'r_g6_1', name: 'الصف السادس 6', type: 'class', block: 'السادس' },
     { id: 'r_g6_2', name: 'الصف السادس 5', type: 'class', block: 'السادس' },
     { id: 'r_g6_3', name: 'الصف السادس 4', type: 'class', block: 'السادس' },
     { id: 'r_g6_sup', name: 'مشرف ومخزن', type: 'store', block: 'السادس' },
-    { id: 'r_g6_tea', name: 'غرفة المعلمين', type: 'teachers', block: 'السادس', fireExt: true },
+    { id: 'r_g6_tea', name: 'غرفة المعلمين', type: 'teachers', block: 'السادس' },
     { id: 'r_g6_4', name: 'الصف السادس 1', type: 'class', block: 'السادس' },
     { id: 'r_g6_5', name: 'الصف السادس 2', type: 'class', block: 'السادس' },
     { id: 'r_g6_6', name: 'الصف السادس 3', type: 'class', block: 'السادس' },
     { id: 'r_g6_wc', name: 'دورة مياه', type: 'wc', block: 'السادس' },
-    { id: 'r_yard_2', name: '⚽ ساحة ومضمار الأنشطة 2', type: 'yard', block: 'الساحات', isEmergencyExit: true },
+    { id: 'r_yard_2', name: '⚽ ساحة ومضمار الأنشطة 2', type: 'yard', block: 'الساحات' },
     { id: 'r_g4_cls', name: 'قاعة دراسية', type: 'class', block: 'الرابع' },
     { id: 'r_g4_1', name: 'الصف الرابع 3', type: 'class', block: 'الرابع' },
     { id: 'r_g4_2', name: 'الصف الرابع 4', type: 'class', block: 'الرابع' },
@@ -93,36 +88,34 @@ const INITIAL_BLUEPRINT_ROOMS = {
     { id: 'r_g4_4', name: 'الصف الرابع 1', type: 'class', block: 'الرابع' },
     { id: 'r_g4_5', name: 'الصف الرابع 2', type: 'class', block: 'الرابع' },
     { id: 'r_g4_wc', name: 'دورة مياه', type: 'wc', block: 'الرابع' },
-    { id: 'r_play_2', name: '👶 ساحة المظلات وألعاب الأطفال 2', type: 'yard', block: 'الساحات', isEmergencyExit: true },
+    { id: 'r_play_2', name: '👶 ساحة المظلات وألعاب الأطفال 2', type: 'yard', block: 'الساحات' },
     { id: 'r_g3_adm', name: 'غرفة الإدارة', type: 'admin', block: 'الثالث' },
     { id: 'r_g3_1', name: 'الصف الثالث 3', type: 'class', block: 'الثالث' },
     { id: 'r_g3_2', name: 'الصف الثالث 4', type: 'class', block: 'الثالث' },
     { id: 'r_g3_spe', name: 'قسم التربية الخاصة', type: 'special', block: 'الثالث' },
-    { id: 'r_g3_tea', name: 'غرفة المعلمين', type: 'teachers', block: 'الثالث', fireExt: true },
+    { id: 'r_g3_tea', name: 'غرفة المعلمين', type: 'teachers', block: 'الثالث' },
     { id: 'r_g3_3', name: 'الصف الثالث 1', type: 'class', block: 'الثالث' },
     { id: 'r_g3_4', name: 'الصف الثالث 2', type: 'class', block: 'الثالث' },
   ],
 };
 
-// قوالب الأعطال الشائعة بلمسة واحدة
-const QUICK_ISSUES = [
-  { id: 'i1', label: 'المكيف معطل / حار ❄️', type: 'تكييف', priority: 'عاجل' },
-  { id: 'i2', label: 'تسريب مياه في الموقع 💧', type: 'سباكة', priority: 'عاجل' },
-  { id: 'i3', label: 'إنارة أو كشاف لا يعمل 💡', type: 'كهرباء', priority: 'متوسط' },
-  { id: 'i4', label: 'قفل أو مقبض باب مكسور 🔒', type: 'أبواب وأقفال', priority: 'عاجل' },
-  { id: 'i5', label: 'مقبس كهربائي خطر ⚡', type: 'كهرباء', priority: 'طوارئ' },
-  { id: 'i6', label: 'كسر زجاج أو نافذة 🪟', type: 'سلامة عامة', priority: 'طوارئ' },
+// 2. أعطال شائعة باللمس السريع (تلغي الحاجة للكتابة للمستخدمين غير المؤهلين)
+const EASY_FAULT_PRESETS = [
+  { id: 'p1', title: 'المكيف لا يبرد / حار ❄️', category: 'تكييف', priority: 'عاجل', color: '#0284C7' },
+  { id: 'p2', title: 'تسريب مياه أو ماسورة 💧', category: 'سباكة', priority: 'طوارئ', color: '#EF4444' },
+  { id: 'p3', title: 'كشاف أو لمبة مطفأة 💡', category: 'كهرباء', priority: 'عادي', color: '#F59E0B' },
+  { id: 'p4', title: 'مقبس كهربائي خطر ⚡', category: 'كهرباء', priority: 'طوارئ', color: '#EF4444' },
+  { id: 'p5', title: 'قفل أو مقبض الباب مكسور 🔒', category: 'أبواب', priority: 'عاجل', color: '#0284C7' },
+  { id: 'p6', title: 'كسر زجاج نافذة 🪟', category: 'سلامة', priority: 'طوارئ', color: '#EF4444' },
+  { id: 'p7', title: 'طاولة أو كرسي مكسور 🪑', category: 'أثاث', priority: 'عادي', color: '#64748B' },
+  { id: 'p8', title: 'انسداد تصريف الحمام 🚽', category: 'سباكة', priority: 'عاجل', color: '#F59E0B' },
 ];
 
 export default function App() {
-  const [roomsData, setRoomsData] = useState(INITIAL_BLUEPRINT_ROOMS);
+  const [roomsData, setRoomsData] = useState(INITIAL_ROOMS_DATA);
   const [selectedFloor, setSelectedFloor] = useState('ground');
-  const [activeTab, setActiveTab] = useState('map');
+  const [activeTab, setActiveTab] = useState('map'); // map, lifecycle, inspection, checklist
   const [zoomScale, setZoomScale] = useState(1.0);
-
-  // أوضاع العرض الذكية
-  const [safetyMode, setSafetyMode] = useState(false);
-  const [heatmapMode, setHeatmapMode] = useState(false);
 
   // إدارة الغرفة المحددة
   const [currentRoom, setCurrentRoom] = useState(null);
@@ -131,51 +124,58 @@ export default function App() {
   const [renameModalVisible, setRenameModalVisible] = useState(false);
   const [editedName, setEditedName] = useState('');
 
-  // تسجيل البلاغات والملاحظات الصوتية
-  const [faultModalVisible, setFaultModalVisible] = useState(false);
-  const [selectedIssue, setSelectedIssue] = useState(QUICK_ISSUES[0]);
-  const [selectedPriority, setSelectedPriority] = useState('عاجل');
-  const [isVoiceRecording, setIsVoiceRecording] = useState(false);
-  const [voiceAttached, setVoiceAttached] = useState(false);
+  // نافذة التبليغ السريع
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [selectedPreset, setSelectedPreset] = useState(EASY_FAULT_PRESETS[0]);
+  const [hasVoiceNote, setHasVoiceNote] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
 
-  // البلاغات النشطة
+  // قاعدة بيانات دورة الصيانة
   const [faults, setFaults] = useState([
     {
-      id: 'f1',
+      id: 'F-101',
       zone_id: 'l_g5_1',
       location: 'الصف الخامس 4',
-      problem: 'تسريب مياه من التكييف',
-      type: 'تكييف',
-      priority: 'عاجل',
-      status: 'new',
+      problem: 'تسريب مياه أو ماسورة 💧',
+      category: 'سباكة',
+      priority: 'طوارئ',
+      status: 'new', // new (جديد) -> working (جاري) -> closed (تم الحل)
+      technician: 'فني السباكة - راشد',
       time: '08:15 ص',
       hasVoice: false,
     },
     {
-      id: 'f2',
+      id: 'F-102',
       zone_id: 'c_pool',
       location: 'المسبح الرياضي والمدرجات',
-      problem: 'مضخة الفلتر بحاجة صيانة',
-      type: 'سباكة',
-      priority: 'طوارئ',
-      status: 'in_progress',
-      time: '09:30 ص',
+      problem: 'المكيف لا يبرد / حار ❄️',
+      category: 'تكييف',
+      priority: 'عاجل',
+      status: 'working',
+      technician: 'فني التكييف - كومار',
+      time: '09:00 ص',
       hasVoice: true,
+    },
+    {
+      id: 'F-103',
+      zone_id: 'r_g6_1',
+      location: 'الصف السادس 6',
+      problem: 'كشاف أو لمبة مطفأة 💡',
+      category: 'كهرباء',
+      priority: 'عادي',
+      status: 'closed',
+      technician: 'فني الكهرباء - محمد',
+      time: 'أمس',
+      hasVoice: false,
     },
   ]);
 
-  // سجل الجولات التفتيشية ونقاط الـ QR
-  const [patrolLogs, setPatrolLogs] = useState([
-    { id: 'p1', point: 'جناح الصف الخامس (شمال)', time: '07:45 ص', status: 'سليم ✅' },
-    { id: 'p2', point: 'مجمع الصالات والمسبح', time: '08:30 ص', status: 'سليم ✅' },
-  ]);
-
   // قائمة الفحص المسائي
-  const [checklist, setChecklist] = useState({
-    doorsLocked: true,
-    acTurnedOff: false,
-    lightsOff: false,
-    windowsClosed: true,
+  const [dailyChecklist, setDailyChecklist] = useState({
+    doors: false,
+    ac: false,
+    lights: false,
+    windows: false,
   });
 
   const handleRoomClick = (room, wingKey) => {
@@ -184,42 +184,38 @@ export default function App() {
     setDrawerVisible(true);
   };
 
-  const handleSaveRename = () => {
-    if (!editedName.trim()) return;
-    const updatedWing = roomsData[currentWingKey].map((rm) =>
-      rm.id === currentRoom.id ? { ...rm, name: editedName.trim() } : rm
-    );
-    setRoomsData({ ...roomsData, [currentWingKey]: updatedWing });
-    setCurrentRoom({ ...currentRoom, name: editedName.trim() });
-    setRenameModalVisible(false);
-    Alert.alert('تم الحفظ بنجاح ✅', `تم اعتماد المسمى الجديد: "${editedName.trim()}"`);
-  };
-
-  const handleAddFault = () => {
-    const newF = {
-      id: 'f_' + Date.now(),
-      zone_id: currentRoom ? currentRoom.id : 'gen',
+  // تسجيل البلاغ بنقرة واحدة
+  const handleCreateReport = () => {
+    const newFault = {
+      id: `F-${Date.now().toString().slice(-3)}`,
+      zone_id: currentRoom ? currentRoom.id : 'general',
       location: currentRoom ? currentRoom.name : 'المجمع العام',
-      problem: selectedIssue.label,
-      type: selectedIssue.type,
-      priority: selectedPriority,
+      problem: selectedPreset.title,
+      category: selectedPreset.category,
+      priority: selectedPreset.priority,
       status: 'new',
+      technician: 'بانتظار التكليف',
       time: 'الآن',
-      hasVoice: voiceAttached,
+      hasVoice: hasVoiceNote,
     };
-    setFaults([newF, ...faults]);
-    setFaultModalVisible(false);
+    setFaults([newFault, ...faults]);
+    setReportModalVisible(false);
     setDrawerVisible(false);
-    setVoiceAttached(false);
-    Alert.alert('تم تسجيل البلاغ 🚨', `الموقع: ${newF.location}\nالمشكلة: ${newF.problem}`);
+    setHasVoiceNote(false);
+    Alert.alert('تم تسجيل البلاغ بنجاح 🚨', `الموقع: ${newFault.location}\nالمشكلة: ${newFault.problem}`);
   };
 
-  const cycleStatus = (id) => {
+  // التبديل الدوري السهل لدورة حياة العطل (جديد ⬅️ جاري العمل ⬅️ تم الحل)
+  const advanceFaultLifecycle = (faultId) => {
     setFaults(
       faults.map((f) => {
-        if (f.id === id) {
-          if (f.status === 'new') return { ...f, status: 'in_progress' };
-          if (f.status === 'in_progress') return { ...f, status: 'resolved' };
+        if (f.id === faultId) {
+          if (f.status === 'new') {
+            return { ...f, status: 'working', technician: 'فريق الصيانة الميداني' };
+          }
+          if (f.status === 'working') {
+            return { ...f, status: 'closed' };
+          }
           return { ...f, status: 'new' };
         }
         return f;
@@ -227,69 +223,42 @@ export default function App() {
     );
   };
 
-  // إرسال تقرير العطل المباشر عبر واتساب
-  const sendWhatsAppAlert = (room, faultText) => {
-    const msg = `*بلاغ صيانة مجمع زايد التعليمي*\n📍 الموقع: ${room?.name || 'غير محدد'}\n⚠️ الحالة: ${faultText || 'طلب فحص عاجل'}\n🕒 التوقيت: ${new Date().toLocaleTimeString('ar-AE')}`;
-    const url = `whatsapp://send?text=${encodeURIComponent(msg)}`;
+  // إرسال واتساب مباشر بدون كتابة
+  const sendWhatsAppTicket = (f) => {
+    const text = `*🚨 بلاغ صيانة عاجل - مجمع زايد التعليمي*\n• كود البلاغ: ${f.id}\n• الموقع: ${f.location}\n• المشكلة: ${f.problem}\n• الأولوية: ${f.priority}\n• الحالة: ${f.status === 'new' ? 'جديد ⏳' : f.status === 'working' ? 'جاري الإصلاح 🛠️' : 'تم الحل ✅'}`;
+    const url = `whatsapp://send?text=${encodeURIComponent(text)}`;
     Linking.openURL(url).catch(() => {
-      Alert.alert('تنبيه', 'تطبيق واتساب غير مثبت على هذا الهاتف.');
+      Alert.alert('تنبيه', 'تطبيق واتساب غير مثبت على هاتفك.');
     });
   };
 
-  // محاكاة مسح باركود نقطة التفتيش
-  const handleScanQR = () => {
-    Alert.alert('مسح نقطة تفتيش 📷', 'اختر نقطة التفتيش الممسوحة:', [
-      {
-        text: 'جناح الصفوف 1-5',
-        onPress: () => {
-          const newLog = {
-            id: 'p_' + Date.now(),
-            point: 'جناح الصفوف 1-5',
-            time: new Date().toLocaleTimeString('ar-AE'),
-            status: 'تم التحقق ✅',
-          };
-          setPatrolLogs([newLog, ...patrolLogs]);
-          Alert.alert('تم التوثيق ✅', 'تم تسجيل نقطة التفتيش بنجاح مع التوقيت.');
-        },
-      },
-      {
-        text: 'مجمع الخدمات والمسبح',
-        onPress: () => {
-          const newLog = {
-            id: 'p_' + Date.now(),
-            point: 'مجمع الخدمات والمسبح',
-            time: new Date().toLocaleTimeString('ar-AE'),
-            status: 'تم التحقق ✅',
-          };
-          setPatrolLogs([newLog, ...patrolLogs]);
-          Alert.alert('تم التوثيق ✅', 'تم تسجيل نقطة التفتيش بنجاح.');
-        },
-      },
-      { text: 'إلغاء', style: 'cancel' },
-    ]);
+  // حفظ التسمية المعدلة للقاعة
+  const handleSaveRename = () => {
+    if (!editedName.trim()) return;
+    const updated = roomsData[currentWingKey].map((r) =>
+      r.id === currentRoom.id ? { ...r, name: editedName.trim() } : r
+    );
+    setRoomsData({ ...roomsData, [currentWingKey]: updated });
+    setCurrentRoom({ ...currentRoom, name: editedName.trim() });
+    setRenameModalVisible(false);
+    Alert.alert('تم التعديل بنجاح ✅', `المسمى المعتمد: "${editedName.trim()}"`);
   };
 
-  const getFaultCount = (roomId) => faults.filter((f) => f.zone_id === roomId && f.status !== 'resolved').length;
+  const getActiveFaultsCount = (roomId) =>
+    faults.filter((f) => f.zone_id === roomId && f.status !== 'closed').length;
 
   const renderRoomBox = (room, wingKey, isWide = false, customHeight = 65) => {
-    const fCount = getFaultCount(room.id);
-    const hasFault = fCount > 0;
+    const alertCount = getActiveFaultsCount(room.id);
+    const hasActiveFault = alertCount > 0;
 
     let bg = '#FEF9C3';
     let border = '#EAB308';
-
-    if (heatmapMode) {
-      if (fCount === 0) { bg = '#DCFCE7'; border = '#22C55E'; }
-      else if (fCount === 1) { bg = '#FEF08A'; border = '#EAB308'; }
-      else { bg = '#FEE2E2'; border = '#EF4444'; }
-    } else {
-      if (room.type === 'admin') { bg = '#F1F5F9'; border = '#94A3B8'; }
-      else if (room.type === 'teachers') { bg = '#E0F2FE'; border = '#38BDF8'; }
-      else if (room.type === 'special') { bg = '#FCE7F3'; border = '#EC4899'; }
-      else if (room.type === 'lab') { bg = '#DCFCE7'; border = '#22C55E'; }
-      else if (room.type === 'yard') { bg = '#F8FAFC'; border = '#CBD5E1'; customHeight = 120; }
-      if (hasFault) { bg = '#FEE2E2'; border = '#EF4444'; }
-    }
+    if (room.type === 'admin') { bg = '#F1F5F9'; border = '#94A3B8'; }
+    else if (room.type === 'teachers') { bg = '#E0F2FE'; border = '#38BDF8'; }
+    else if (room.type === 'special') { bg = '#FCE7F3'; border = '#EC4899'; }
+    else if (room.type === 'lab') { bg = '#DCFCE7'; border = '#22C55E'; }
+    else if (room.type === 'yard') { bg = '#F8FAFC'; border = '#CBD5E1'; customHeight = 120; }
+    if (hasActiveFault) { bg = '#FEE2E2'; border = '#EF4444'; }
 
     return (
       <TouchableOpacity
@@ -297,31 +266,17 @@ export default function App() {
         activeOpacity={0.75}
         style={[
           styles.roomItem,
-          {
-            backgroundColor: bg,
-            borderColor: border,
-            height: customHeight,
-          },
+          { backgroundColor: bg, borderColor: border, height: customHeight },
           isWide && { width: '100%' },
         ]}
         onPress={() => handleRoomClick(room, wingKey)}
       >
-        <Text style={[styles.roomItemText, hasFault && !heatmapMode && { color: '#EF4444' }]} numberOfLines={2}>
+        <Text style={[styles.roomItemText, hasActiveFault && { color: '#EF4444' }]} numberOfLines={2}>
           {room.name}
         </Text>
-
-        {/* مؤشر البلاغات */}
-        {hasFault && !heatmapMode && (
+        {hasActiveFault && (
           <View style={styles.alertBadge}>
-            <Text style={styles.alertBadgeText}>{fCount}</Text>
-          </View>
-        )}
-
-        {/* شارات طبقة السلامة ومخارج الطوارئ */}
-        {safetyMode && (
-          <View style={styles.safetyOverlayRow}>
-            {room.fireExt && <Text style={styles.safetyIcon}>🧯</Text>}
-            {room.isEmergencyExit && <Text style={styles.safetyIcon}>🟢🚪</Text>}
+            <Text style={styles.alertBadgeText}>{alertCount}</Text>
           </View>
         )}
       </TouchableOpacity>
@@ -332,9 +287,12 @@ export default function App() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
 
-      {/* الشريط العلوي */}
+      {/* 1. الشريط العلوي */}
       <View style={styles.topBar}>
-        <Text style={styles.topBarTitle}>نظام مجمع زايد الذكي للمرافق والأمن</Text>
+        <View>
+          <Text style={styles.topBarTitle}>نظام الصيانة الميداني المتكامل</Text>
+          <Text style={styles.topBarSub}>مجمع زايد التعليمي - كود التشغيل السريع</Text>
+        </View>
         <TouchableOpacity
           style={styles.btnFloor}
           onPress={() => setSelectedFloor(selectedFloor === 'ground' ? 'upper' : 'ground')}
@@ -343,34 +301,12 @@ export default function App() {
         </TouchableOpacity>
       </View>
 
-      {/* شريط الأدوات الذكية المتقدمة */}
-      <View style={styles.smartToolsBar}>
-        <TouchableOpacity
-          style={[styles.smartToggleBtn, safetyMode && styles.smartToggleBtnActive]}
-          onPress={() => setSafetyMode(!safetyMode)}
-        >
-          <Ionicons name="shield-outline" size={14} color={safetyMode ? '#FFF' : '#38BDF8'} />
-          <Text style={[styles.smartToggleTxt, safetyMode && { color: '#FFF' }]}>
-            {safetyMode ? 'مخطط السلامة: نشط 🧯' : 'مخطط السلامة والطوارئ'}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.smartToggleBtn, heatmapMode && { backgroundColor: '#EF4444', borderColor: '#EF4444' }]}
-          onPress={() => setHeatmapMode(!heatmapMode)}
-        >
-          <Ionicons name="flame-outline" size={14} color={heatmapMode ? '#FFF' : '#F59E0B'} />
-          <Text style={[styles.smartToggleTxt, heatmapMode && { color: '#FFF' }]}>
-            {heatmapMode ? 'الخريطة الحرارية: تعمل' : 'الخريطة الحرارية للأعطال'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* المحتوى الرئيسي */}
+      {/* 2. المحتوى بحسب التبويب النشط */}
       {activeTab === 'map' ? (
         <ScrollView style={{ flex: 1 }}>
+          {/* شريط التحكم بالتكبير */}
           <View style={styles.controlsBar}>
-            <Text style={styles.controlsTxt}>↔️ اسحب للتنقل الكامل عبر المخطط</Text>
+            <Text style={styles.controlsTxt}>↔️ اسحب المخطط للتنقل بحرية كاملة</Text>
             <View style={{ flexDirection: 'row-reverse', gap: 6 }}>
               <TouchableOpacity onPress={() => setZoomScale((s) => Math.min(s + 0.2, 1.8))} style={styles.btnTool}>
                 <Text style={styles.btnToolTxt}>➕ تكبير</Text>
@@ -384,7 +320,7 @@ export default function App() {
             </View>
           </View>
 
-          {/* مساحة المخطط المعماري الكامل المعكوس هندسياً */}
+          {/* مساحة المخطط المعماري الثلاثي (اليسار 1-5 | الوسط خدمات | اليمين 3-6) */}
           <View style={styles.canvasWrapper}>
             <ScrollView horizontal showsHorizontalScrollIndicator={true} nestedScrollEnabled={true}>
               <ScrollView showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
@@ -419,32 +355,26 @@ export default function App() {
                     </View>
                   </View>
 
-                  {/* القطاع الأوسط: الخدمات والمرافق المركزية */}
+                  {/* القطاع الأوسط: المرافق المركزية */}
                   <View style={[styles.wingColumn, { width: 350 }]}>
                     <Text style={styles.wingHeaderTitle}>الخدمات والمرافق المركزية</Text>
-                    
                     <View style={styles.gridRowWrap}>
                       {roomsData.center_wing.slice(0, 3).map((r) => renderRoomBox(r, 'center_wing', false, 80))}
                     </View>
-
                     <View style={styles.gridRowWrap}>
                       {roomsData.center_wing.slice(3, 6).map((r) => renderRoomBox(r, 'center_wing', false, 70))}
                     </View>
-
                     <View style={styles.gridRowWrap}>
                       {roomsData.center_wing.slice(6, 8).map((r) => renderRoomBox(r, 'center_wing', false, 70))}
                     </View>
-
                     {renderRoomBox(roomsData.center_wing[8], 'center_wing', true, 130)}
                     {renderRoomBox(roomsData.center_wing[9], 'center_wing', true, 140)}
-
                     <View style={styles.wingSectionCard}>
                       <Text style={styles.blockTitle}>مجمع المختبرات العلمية والحاسوب</Text>
                       <View style={styles.gridRowWrap}>
                         {roomsData.center_wing.slice(10, 14).map((r) => renderRoomBox(r, 'center_wing', false, 75))}
                       </View>
                     </View>
-
                     <View style={styles.wingSectionCard}>
                       <Text style={styles.blockTitle}>الإدارة العامة والاستقبال</Text>
                       <View style={styles.gridRowWrap}>
@@ -487,272 +417,287 @@ export default function App() {
             </ScrollView>
           </View>
         </ScrollView>
-      ) : activeTab === 'faults' ? (
-        /* تبويب الأعطال الشامل */
+      ) : activeTab === 'lifecycle' ? (
+        /* 3. تبويب دورة حياة الصيانة (مبسط جداً للمستخدمين غير المؤهلين) */
         <ScrollView style={{ flex: 1, padding: 14 }}>
-          <View style={styles.tabSectionHeaderRow}>
-            <Text style={styles.tabSectionTitle}>سجل بلاغات الصيانة الميدانية ({faults.length})</Text>
-            <TouchableOpacity
-              style={styles.btnPdfExport}
-              onPress={() => Alert.alert('تصدير PDF 📄', 'تم استخراج كشف تقرير الصيانة الدوري لكافة أجنحة المجمع.')}
-            >
-              <Ionicons name="document-text-outline" size={16} color="#FFF" />
-              <Text style={styles.btnPdfExportTxt}>كشف PDF</Text>
-            </TouchableOpacity>
+          {/* مؤشرات الحالة الكبيرة */}
+          <View style={styles.statsRow}>
+            <View style={[styles.statBox, { borderColor: '#EF4444' }]}>
+              <Text style={[styles.statNumber, { color: '#EF4444' }]}>
+                {faults.filter((f) => f.status === 'new').length}
+              </Text>
+              <Text style={styles.statLabel}>🔴 جديد ⏳</Text>
+            </View>
+            <View style={[styles.statBox, { borderColor: '#F59E0B' }]}>
+              <Text style={[styles.statNumber, { color: '#F59E0B' }]}>
+                {faults.filter((f) => f.status === 'working').length}
+              </Text>
+              <Text style={styles.statLabel}>🟡 جاري الإصلاح 🛠️</Text>
+            </View>
+            <View style={[styles.statBox, { borderColor: '#10B981' }]}>
+              <Text style={[styles.statNumber, { color: '#10B981' }]}>
+                {faults.filter((f) => f.status === 'closed').length}
+              </Text>
+              <Text style={styles.statLabel}>🟢 تم الحل ✅</Text>
+            </View>
           </View>
 
+          <Text style={styles.sectionHeaderTxt}>إدارة دورة حياة الأعطال (انقر على الزر الملون لتغيير المرحلة مباشرة):</Text>
+
           {faults.map((f) => {
-            const isDone = f.status === 'resolved';
-            const isWorking = f.status === 'in_progress';
+            const isNew = f.status === 'new';
+            const isWorking = f.status === 'working';
+            const isClosed = f.status === 'closed';
 
             return (
-              <View key={f.id} style={[styles.faultCardItem, isDone && { opacity: 0.7, borderColor: '#10B981' }]}>
-                <View style={styles.faultCardHeader}>
-                  <Text style={styles.faultCardLoc}>📍 {f.location}</Text>
-                  <Text
-                    style={[
-                      styles.priorityBadge,
-                      f.priority === 'طوارئ' && { backgroundColor: '#EF4444' },
-                      f.priority === 'عاجل' && { backgroundColor: '#F97316' },
-                      f.priority === 'متوسط' && { backgroundColor: '#F59E0B' },
-                    ]}
-                  >
-                    {f.priority}
+              <View key={f.id} style={[styles.faultCard, isClosed && { opacity: 0.6, borderColor: '#10B981' }]}>
+                <View style={styles.faultCardTop}>
+                  <Text style={styles.faultLocation}>📍 {f.location}</Text>
+                  <Text style={[styles.badgeTag, { backgroundColor: isNew ? '#EF4444' : isWorking ? '#F59E0B' : '#10B981' }]}>
+                    {isNew ? 'بلاغ جديد' : isWorking ? 'قيد العمل' : 'مغلق ومحلول'}
                   </Text>
                 </View>
 
-                <Text style={styles.faultCardDesc}>⚠️ {f.problem}</Text>
-                <View style={styles.faultCardMetaRow}>
-                  <Text style={styles.faultCardMetaTxt}>التوقيت: {f.time} | النوع: {f.type}</Text>
-                  {f.hasVoice && <Text style={styles.voiceAttachedTag}>🎤 مرفق تسجيل صوتي</Text>}
-                </View>
+                <Text style={styles.faultIssueTxt}>{f.problem}</Text>
+                <Text style={styles.faultMetaTxt}>الفني المكلف: {f.technician} | التوقيت: {f.time}</Text>
 
-                <View style={styles.faultActionsRow}>
+                {f.hasVoice && (
+                  <View style={styles.voiceIndicator}>
+                    <Ionicons name="mic" size={14} color="#38BDF8" />
+                    <Text style={{ color: '#38BDF8', fontSize: 11, fontWeight: 'bold' }}>مرفق تسجيل صوتي للعطل</Text>
+                  </View>
+                )}
+
+                {/* زر النقل السريع بين مراحل الصيانة */}
+                <View style={styles.cardActionsRow}>
                   <TouchableOpacity
                     style={[
-                      styles.btnStatusCycle,
-                      isDone ? { backgroundColor: '#10B981' } : isWorking ? { backgroundColor: '#F59E0B' } : { backgroundColor: '#EF4444' },
+                      styles.btnCycleStatus,
+                      isNew && { backgroundColor: '#EF4444' },
+                      isWorking && { backgroundColor: '#F59E0B' },
+                      isClosed && { backgroundColor: '#10B981' },
                     ]}
-                    onPress={() => cycleStatus(f.id)}
+                    onPress={() => advanceFaultLifecycle(f.id)}
                   >
-                    <Text style={styles.btnStatusCycleTxt}>
-                      {isDone ? '✅ تم الحل بنجاح' : isWorking ? '🛠️ قيد المعالجة الآن' : '⏳ بلاغ جديد (انقر للبدء)'}
+                    <Text style={styles.btnCycleStatusTxt}>
+                      {isNew && '⏳ انقر هنا لبدء العمل في الموقع'}
+                      {isWorking && '🛠️ قيد الإصلاح.. انقر للتأكيد والإغلاق'}
+                      {isClosed && '✅ تم إنجاز الصيانة بنجاح (مكتمل)'}
                     </Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={styles.btnWhatsappQuick}
-                    onPress={() => sendWhatsAppAlert({ name: f.location }, f.problem)}
-                  >
-                    <Ionicons name="logo-whatsapp" size={18} color="#FFF" />
+                  <TouchableOpacity style={styles.btnWhatsApp} onPress={() => sendWhatsAppTicket(f)}>
+                    <Ionicons name="logo-whatsapp" size={20} color="#FFF" />
                   </TouchableOpacity>
                 </View>
               </View>
             );
           })}
         </ScrollView>
-      ) : activeTab === 'patrol' ? (
-        /* تبويب التفتيش الأمني ونقاط الـ QR */
-        <ScrollView style={{ flex: 1, padding: 14 }}>
-          <Text style={styles.tabSectionTitle}>🛡️ سجل الجولات الأمنية والتفتيش الميداني</Text>
-          <TouchableOpacity style={styles.btnScanBig} onPress={handleScanQR}>
-            <Ionicons name="qr-code-outline" size={32} color="#FFF" />
-            <Text style={styles.btnScanBigTxt}>مسح باركود نقطة التفتيش (QR)</Text>
+      ) : activeTab === 'inspection' ? (
+        /* 4. تبويب التفتيش الأمني والـ QR */
+        <ScrollView style={{ flex: 1, padding: 16 }}>
+          <Text style={styles.sectionHeaderTxt}>🛡️ نظام التفتيش الأمني والجولات الميدانية</Text>
+          <TouchableOpacity
+            style={styles.bigScanCard}
+            onPress={() => Alert.alert('مسح QR 📷', 'تم فتح الكاميرا.. امسح ملصق القاعة لتوثيق الجولة فوراً')}
+          >
+            <Ionicons name="qr-code-outline" size={48} color="#FFF" />
+            <Text style={styles.bigScanTitle}>مسح باركود القاعة وتوثيق المرور</Text>
+            <Text style={styles.bigScanSub}>يسجل التاريخ والوقت والحالة بدون كتابة</Text>
           </TouchableOpacity>
 
-          <Text style={[styles.blockTitle, { marginTop: 20, textAlign: 'right' }]}>سجل التحقق اليومي:</Text>
-          {patrolLogs.map((p) => (
-            <View key={p.id} style={styles.logCard}>
-              <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={styles.logCardPoint}>📍 {p.point}</Text>
-                <Text style={styles.logCardStatus}>{p.status}</Text>
-              </View>
-              <Text style={styles.logCardTime}>🕒 وقت المسح: {p.time}</Text>
-            </View>
-          ))}
+          <TouchableOpacity
+            style={styles.pdfExportBtn}
+            onPress={() => Alert.alert('تقرير PDF 📄', 'تم استخراج التقرير الأمني والفني المجمع بصيغة PDF جاهز للطباعة')}
+          >
+            <Ionicons name="document-text-outline" size={20} color="#FFF" />
+            <Text style={styles.pdfExportBtnTxt}>استخراج تقرير الصيانة الشامل (PDF)</Text>
+          </TouchableOpacity>
         </ScrollView>
       ) : (
-        /* تبويب قائمة الفحص المسائي (Checklist) */
-        <ScrollView style={{ flex: 1, padding: 14 }}>
-          <Text style={styles.tabSectionTitle}>📋 قائمة الفحص المسائي وإغلاق المجمع</Text>
-          <Text style={{ color: '#94A3B8', fontSize: 12, textAlign: 'right', marginBottom: 14 }}>
-            يتم فحص هذه النقاط يومياً عند نهاية الدوام لضمان سلامة وأمن المبنى:
+        /* 5. تبويب قائمة الفحص المسائي (Checklist) */
+        <ScrollView style={{ flex: 1, padding: 16 }}>
+          <Text style={styles.sectionHeaderTxt}>📋 الفحص المسائي وإغلاق المجمع</Text>
+          <Text style={{ color: '#94A3B8', fontSize: 12, textAlign: 'right', marginBottom: 16 }}>
+            تحقق من النقاط الأربع بنقرة واحدة عند نهاية كل يوم عمل:
           </Text>
 
           {[
-            { key: 'doorsLocked', label: 'إحكام إغلاق أبواب الأجنحة والقاعات 🔒' },
-            { key: 'acTurnedOff', label: 'إطفاء جميع وحدات التكييف والتهوية ❄️' },
-            { key: 'lightsOff', label: 'إطفاء الإنارة الداخلية والممرات 💡' },
-            { key: 'windowsClosed', label: 'التأكد من إغلاق النوافذ والستائر 🪟' },
+            { key: 'doors', title: 'إغلاق وقفل كافة أبواب الأجنحة 🔒' },
+            { key: 'ac', title: 'إطفاء كافة وحدات التكييف والتهوية ❄️' },
+            { key: 'lights', title: 'إطفاء الإضاءة والممرات الداخلية 💡' },
+            { key: 'windows', title: 'التأكد من إحكام إغلاق النوافذ 🪟' },
           ].map((item) => {
-            const isChecked = checklist[item.key];
+            const checked = dailyChecklist[item.key];
             return (
               <TouchableOpacity
                 key={item.key}
-                style={[styles.checklistItem, isChecked && styles.checklistItemActive]}
-                onPress={() => setChecklist({ ...checklist, [item.key]: !isChecked })}
+                style={[styles.checklistCard, checked && styles.checklistCardChecked]}
+                onPress={() => setDailyChecklist({ ...dailyChecklist, [item.key]: !checked })}
               >
                 <Ionicons
-                  name={isChecked ? 'checkbox' : 'square-outline'}
-                  size={24}
-                  color={isChecked ? '#10B981' : '#94A3B8'}
+                  name={checked ? 'checkbox' : 'square-outline'}
+                  size={26}
+                  color={checked ? '#10B981' : '#94A3B8'}
                 />
-                <Text style={[styles.checklistItemTxt, isChecked && { color: '#FFF' }]}>{item.label}</Text>
+                <Text style={[styles.checklistCardTxt, checked && { color: '#FFF' }]}>{item.title}</Text>
               </TouchableOpacity>
             );
           })}
 
           <TouchableOpacity
             style={styles.btnSaveChecklist}
-            onPress={() => Alert.alert('تم الحفظ بنجاح ✅', 'تم توثيق تقرير إغلاق المجمع لليوم.')}
+            onPress={() => Alert.alert('تم الاعتماد ✅', 'تم حفظ وتوثيق تقرير الإغلاق المسائي للمبنى.')}
           >
-            <Text style={styles.btnSaveChecklistTxt}>اعتماد تقرير الإغلاق المسائي</Text>
+            <Text style={styles.btnSaveChecklistTxt}>حفظ واعتماد تقرير الإغلاق</Text>
           </TouchableOpacity>
         </ScrollView>
       )}
 
-      {/* شريط التبويبات السفلي */}
-      <View style={styles.navBottom}>
-        <TouchableOpacity style={styles.navBtn} onPress={() => setActiveTab('map')}>
+      {/* 3. شريط التبويبات السفلي */}
+      <View style={styles.bottomNav}>
+        <TouchableOpacity style={styles.navTabBtn} onPress={() => setActiveTab('map')}>
           <Ionicons name="map" size={22} color={activeTab === 'map' ? '#38BDF8' : '#94A3B8'} />
-          <Text style={[styles.navBtnTxt, activeTab === 'map' && styles.navBtnTxtActive]}>المخطط</Text>
+          <Text style={[styles.navTabTxt, activeTab === 'map' && styles.navTabTxtActive]}>المخطط</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navBtn} onPress={() => setActiveTab('faults')}>
-          <Ionicons name="alert-circle-outline" size={22} color={activeTab === 'faults' ? '#38BDF8' : '#94A3B8'} />
-          <Text style={[styles.navBtnTxt, activeTab === 'faults' && styles.navBtnTxtActive]}>الأعطال</Text>
+        <TouchableOpacity style={styles.navTabBtn} onPress={() => setActiveTab('lifecycle')}>
+          <Ionicons name="sync-circle-outline" size={24} color={activeTab === 'lifecycle' ? '#38BDF8' : '#94A3B8'} />
+          <Text style={[styles.navTabTxt, activeTab === 'lifecycle' && styles.navTabTxtActive]}>دورة الصيانة</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navBtn} onPress={() => setActiveTab('patrol')}>
-          <Ionicons name="shield-checkmark-outline" size={22} color={activeTab === 'patrol' ? '#38BDF8' : '#94A3B8'} />
-          <Text style={[styles.navBtnTxt, activeTab === 'patrol' && styles.navBtnTxtActive]}>التفتيش</Text>
+        <TouchableOpacity style={styles.navTabBtn} onPress={() => setActiveTab('inspection')}>
+          <Ionicons name="shield-checkmark-outline" size={22} color={activeTab === 'inspection' ? '#38BDF8' : '#94A3B8'} />
+          <Text style={[styles.navTabTxt, activeTab === 'inspection' && styles.navTabTxtActive]}>التفتيش</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navBtn} onPress={() => setActiveTab('checklist')}>
+        <TouchableOpacity style={styles.navTabBtn} onPress={() => setActiveTab('checklist')}>
           <Ionicons name="checkbox-outline" size={22} color={activeTab === 'checklist' ? '#38BDF8' : '#94A3B8'} />
-          <Text style={[styles.navBtnTxt, activeTab === 'checklist' && styles.navBtnTxtActive]}>الفحص</Text>
+          <Text style={[styles.navTabTxt, activeTab === 'checklist' && styles.navTabTxtActive]}>الفحص اليومي</Text>
         </TouchableOpacity>
       </View>
 
-      {/* نافذة تفاصيل الغرفة الذكية */}
+      {/* نافذة خيارات الغرفة (أزرار كبيرة تناسب الجميع) */}
       <Modal visible={drawerVisible} transparent={true} animationType="slide">
-        <View style={styles.modalBg}>
-          <View style={styles.sheetCard}>
-            <View style={styles.sheetHeader}>
-              <Text style={styles.sheetTitle}>{currentRoom?.name}</Text>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.drawerCard}>
+            <View style={styles.drawerHeader}>
+              <Text style={styles.drawerTitle}>{currentRoom?.name}</Text>
               <TouchableOpacity onPress={() => setDrawerVisible(false)}>
-                <Ionicons name="close-circle" size={26} color="#94A3B8" />
+                <Ionicons name="close-circle" size={28} color="#94A3B8" />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.actionButtonsRow}>
-              <TouchableOpacity
-                style={[styles.btnAction, { backgroundColor: '#EF4444' }]}
-                onPress={() => {
-                  setDrawerVisible(false);
-                  setFaultModalVisible(true);
-                }}
-              >
-                <Ionicons name="warning-outline" size={18} color="#FFF" />
-                <Text style={styles.btnActionTxt}>تسجيل عطل 🚨</Text>
-              </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.btnActionLarge, { backgroundColor: '#EF4444' }]}
+              onPress={() => {
+                setDrawerVisible(false);
+                setReportModalVisible(true);
+              }}
+            >
+              <Ionicons name="warning-outline" size={24} color="#FFF" />
+              <Text style={styles.btnActionLargeTxt}>🚨 تسجيل بلاغ عطل فوري</Text>
+            </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.btnAction, { backgroundColor: '#25D366' }]}
-                onPress={() => sendWhatsAppAlert(currentRoom, 'طلب فحص ميداني ومعاينة')}
-              >
-                <Ionicons name="logo-whatsapp" size={18} color="#FFF" />
-                <Text style={styles.btnActionTxt}>واتساب فوراً</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={[styles.btnActionLarge, { backgroundColor: '#25D366', marginTop: 10 }]}
+              onPress={() => {
+                setDrawerVisible(false);
+                sendWhatsAppTicket({
+                  id: 'مباشر',
+                  location: currentRoom?.name,
+                  problem: 'طلب فحص ومعاينة فورية',
+                  priority: 'عاجل',
+                  status: 'new',
+                });
+              }}
+            >
+              <Ionicons name="logo-whatsapp" size={24} color="#FFF" />
+              <Text style={styles.btnActionLargeTxt}>إرسال بلاغ واتساب مباشر</Text>
+            </TouchableOpacity>
 
-            <View style={[styles.actionButtonsRow, { marginTop: 8 }]}>
+            <View style={{ flexDirection: 'row-reverse', gap: 10, marginTop: 10 }}>
               <TouchableOpacity
-                style={[styles.btnAction, { backgroundColor: '#0284C7' }]}
+                style={[styles.btnActionLarge, { backgroundColor: '#0284C7', flex: 1 }]}
                 onPress={() => {
                   setEditedName(currentRoom?.name || '');
                   setDrawerVisible(false);
                   setRenameModalVisible(true);
                 }}
               >
-                <Ionicons name="create-outline" size={18} color="#FFF" />
-                <Text style={styles.btnActionTxt}>تعديل اسم القاعة ✏️</Text>
+                <Ionicons name="create-outline" size={20} color="#FFF" />
+                <Text style={styles.btnActionLargeTxt}>تعديل الاسم ✏️</Text>
               </TouchableOpacity>
-
               <TouchableOpacity
-                style={[styles.btnAction, { backgroundColor: '#334155' }]}
+                style={[styles.btnActionLarge, { backgroundColor: '#334155', flex: 1 }]}
                 onPress={() => Alert.alert('كاميرا المرفق 📷', `فتح الكاميرا لتوثيق حالة (${currentRoom?.name})`)}
               >
-                <Ionicons name="camera-outline" size={18} color="#FFF" />
-                <Text style={styles.btnActionTxt}>التقاط صورة</Text>
+                <Ionicons name="camera-outline" size={20} color="#FFF" />
+                <Text style={styles.btnActionLargeTxt}>صورة 📷</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
 
-      {/* نافذة تسجيل البلاغ السريعة (بدون كتابة مع ميزة التسجيل الصوتي) */}
-      <Modal visible={faultModalVisible} transparent={true} animationType="slide">
-        <View style={styles.modalBg}>
-          <View style={styles.faultFastCard}>
-            <Text style={styles.sheetTitle}>تسجيل بلاغ في: {currentRoom?.name}</Text>
-            <Text style={{ color: '#94A3B8', fontSize: 11, textAlign: 'right', marginTop: 4, marginBottom: 10 }}>
-              اختر المشكلة بلمسة واحدة أو سجّل صوتك مباشرة 👇
+      {/* نافذة التبليغ السريعة (قائمة أزرار جاهزة + تسجيل صوتي) */}
+      <Modal visible={reportModalVisible} transparent={true} animationType="slide">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.reportModalCard}>
+            <Text style={styles.drawerTitle}>تسجيل عطل في: {currentRoom?.name}</Text>
+            <Text style={{ color: '#94A3B8', fontSize: 12, textAlign: 'right', marginTop: 4, marginBottom: 12 }}>
+              اختر المشكلة بلمسة واحدة بدون كتابة 👇
             </Text>
 
-            <ScrollView style={{ maxHeight: 200 }}>
-              {QUICK_ISSUES.map((q) => {
-                const isSelected = selectedIssue.id === q.id;
+            <ScrollView style={{ maxHeight: 240 }}>
+              {EASY_FAULT_PRESETS.map((p) => {
+                const isSelected = selectedPreset.id === p.id;
                 return (
                   <TouchableOpacity
-                    key={q.id}
-                    style={[styles.quickIssueBtn, isSelected && styles.quickIssueBtnActive]}
-                    onPress={() => {
-                      setSelectedIssue(q);
-                      setSelectedPriority(q.priority);
-                    }}
+                    key={p.id}
+                    style={[styles.presetItemBtn, isSelected && { backgroundColor: p.color, borderColor: p.color }]}
+                    onPress={() => setSelectedPreset(p)}
                   >
-                    <Text style={[styles.quickIssueBtnTxt, isSelected && { color: '#FFF' }]}>{q.label}</Text>
+                    <Text style={[styles.presetItemTxt, isSelected && { color: '#FFF' }]}>{p.title}</Text>
                   </TouchableOpacity>
                 );
               })}
             </ScrollView>
 
-            {/* زر الملاحظة الصوتية المباشرة */}
-            <View style={styles.voiceSection}>
-              <TouchableOpacity
-                style={[styles.btnVoiceRecord, isVoiceRecording && { backgroundColor: '#EF4444' }]}
-                onPress={() => {
-                  if (isVoiceRecording) {
-                    setIsVoiceRecording(false);
-                    setVoiceAttached(true);
-                    Alert.alert('تم التسجيل 🎤', 'تم حفظ التسجيل الصوتي وإرفاقه بالبلاغ.');
-                  } else {
-                    setIsVoiceRecording(true);
-                  }
-                }}
-              >
-                <Ionicons name={isVoiceRecording ? 'stop-circle' : 'mic'} size={20} color="#FFF" />
-                <Text style={styles.btnVoiceRecordTxt}>
-                  {isVoiceRecording ? 'إيقاف وحفظ التسجيل (جاري التسجيل...)' : voiceAttached ? '✅ تم إرفاق تسجيل صوتي' : 'اضغط لتسجيل المشكلة بصوتك 🎤'}
-                </Text>
-              </TouchableOpacity>
-            </View>
+            {/* تسجيل صوتي بلمسة واحدة */}
+            <TouchableOpacity
+              style={[styles.btnVoice, isRecording && { backgroundColor: '#EF4444' }]}
+              onPress={() => {
+                if (isRecording) {
+                  setIsRecording(false);
+                  setHasVoiceNote(true);
+                  Alert.alert('تم الحفظ 🎤', 'تم تسجيل صوتك وإرفاقه بالبلاغ بنجاح.');
+                } else {
+                  setIsRecording(true);
+                }
+              }}
+            >
+              <Ionicons name={isRecording ? 'stop-circle' : 'mic'} size={22} color="#FFF" />
+              <Text style={styles.btnVoiceTxt}>
+                {isRecording ? 'جاري التسجيل.. انقر للحفظ ⏹️' : hasVoiceNote ? '✅ تم إرفاق تسجيلك الصوتي' : 'اضغط للتحدث وشرح المشكلة بصوتك 🎤'}
+              </Text>
+            </TouchableOpacity>
 
-            <View style={styles.actionButtonsRow}>
-              <TouchableOpacity style={[styles.btnAction, { backgroundColor: '#10B981', flex: 1.5 }]} onPress={handleAddFault}>
-                <Text style={styles.btnActionTxt}>تأكيد وإرسال البلاغ 🚀</Text>
+            <View style={{ flexDirection: 'row-reverse', gap: 10, marginTop: 14 }}>
+              <TouchableOpacity style={[styles.btnActionLarge, { backgroundColor: '#10B981', flex: 1.5 }]} onPress={handleCreateReport}>
+                <Text style={styles.btnActionLargeTxt}>تأكيد وإرسال البلاغ 🚀</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.btnAction, { backgroundColor: '#475569' }]} onPress={() => setFaultModalVisible(false)}>
-                <Text style={styles.btnActionTxt}>إلغاء</Text>
+              <TouchableOpacity style={[styles.btnActionLarge, { backgroundColor: '#475569', flex: 1 }]} onPress={() => setReportModalVisible(false)}>
+                <Text style={styles.btnActionLargeTxt}>إلغاء</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
 
-      {/* نافذة تعديل التسمية الميدانية */}
+      {/* نافذة إعادة التسمية الميدانية */}
       <Modal visible={renameModalVisible} transparent={true} animationType="fade">
-        <View style={styles.modalBg}>
+        <View style={styles.modalBackdrop}>
           <View style={styles.renameBox}>
-            <Text style={styles.sheetTitle}>تعديل مسمى الفراغ المعماري ✏️</Text>
+            <Text style={styles.drawerTitle}>تعديل مسمى الفراغ المعماري ✏️</Text>
             <Text style={{ color: '#94A3B8', fontSize: 11, textAlign: 'right', marginTop: 4, marginBottom: 10 }}>
               المسمى الحالي: {currentRoom?.name}
             </Text>
@@ -764,11 +709,11 @@ export default function App() {
               placeholderTextColor="#94A3B8"
             />
             <View style={{ flexDirection: 'row-reverse', gap: 10, marginTop: 14 }}>
-              <TouchableOpacity style={[styles.btnAction, { backgroundColor: '#10B981', flex: 1.5 }]} onPress={handleSaveRename}>
-                <Text style={styles.btnActionTxt}>اعتماد الاسم الجديد</Text>
+              <TouchableOpacity style={[styles.btnActionLarge, { backgroundColor: '#10B981', flex: 1.5 }]} onPress={handleSaveRename}>
+                <Text style={styles.btnActionLargeTxt}>اعتماد الاسم</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.btnAction, { backgroundColor: '#475569' }]} onPress={() => setRenameModalVisible(false)}>
-                <Text style={styles.btnActionTxt}>إلغاء</Text>
+              <TouchableOpacity style={[styles.btnActionLarge, { backgroundColor: '#475569', flex: 1 }]} onPress={() => setRenameModalVisible(false)}>
+                <Text style={styles.btnActionLargeTxt}>إلغاء</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -782,15 +727,11 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0F172A' },
   topBar: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#1E293B', borderBottomWidth: 1, borderColor: '#334155' },
   topBarTitle: { color: '#FFFFFF', fontSize: 13, fontWeight: 'bold' },
-  btnFloor: { backgroundColor: '#0284C7', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 },
+  topBarSub: { color: '#38BDF8', fontSize: 10, marginTop: 2 },
+  btnFloor: { backgroundColor: '#0284C7', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
   btnFloorTxt: { color: '#FFFFFF', fontSize: 11, fontWeight: 'bold' },
 
-  smartToolsBar: { flexDirection: 'row-reverse', gap: 8, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: '#0B132B' },
-  smartToggleBtn: { flex: 1, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 7, borderRadius: 8, borderWidth: 1, borderColor: '#38BDF8', backgroundColor: '#1E293B' },
-  smartToggleBtnActive: { backgroundColor: '#0284C7', borderColor: '#38BDF8' },
-  smartToggleTxt: { color: '#38BDF8', fontSize: 11, fontWeight: 'bold' },
-
-  controlsBar: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1E293B', paddingHorizontal: 12, paddingVertical: 8, marginHorizontal: 8, marginTop: 4, borderRadius: 8 },
+  controlsBar: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1E293B', paddingHorizontal: 12, paddingVertical: 8, marginHorizontal: 8, marginTop: 6, borderRadius: 8 },
   controlsTxt: { color: '#38BDF8', fontSize: 11, fontWeight: 'bold' },
   btnTool: { backgroundColor: '#0284C7', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6 },
   btnToolTxt: { color: '#FFF', fontSize: 11, fontWeight: 'bold' },
@@ -808,62 +749,57 @@ const styles = StyleSheet.create({
   roomItemText: { fontSize: 9.5, fontWeight: 'bold', textAlign: 'center', color: '#0F172A' },
   alertBadge: { position: 'absolute', top: -4, right: -4, backgroundColor: '#EF4444', borderRadius: 10, minWidth: 16, height: 16, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#FFF' },
   alertBadgeText: { color: '#FFF', fontSize: 9, fontWeight: 'bold' },
-  safetyOverlayRow: { position: 'absolute', bottom: 2, left: 2, flexDirection: 'row', gap: 2 },
-  safetyIcon: { fontSize: 10 },
 
-  tabSectionHeaderRow: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  tabSectionTitle: { color: '#FFF', fontSize: 15, fontWeight: 'bold', textAlign: 'right' },
-  btnPdfExport: { flexDirection: 'row-reverse', alignItems: 'center', gap: 4, backgroundColor: '#0284C7', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6 },
-  btnPdfExportTxt: { color: '#FFF', fontSize: 11, fontWeight: 'bold' },
+  statsRow: { flexDirection: 'row-reverse', gap: 8, marginBottom: 16 },
+  statBox: { flex: 1, backgroundColor: '#1E293B', padding: 12, borderRadius: 10, alignItems: 'center', borderWidth: 1.5 },
+  statNumber: { fontSize: 22, fontWeight: 'bold' },
+  statLabel: { color: '#F8FAFC', fontSize: 11, marginTop: 4, fontWeight: 'bold' },
 
-  faultCardItem: { backgroundColor: '#1E293B', padding: 12, borderRadius: 10, marginBottom: 8, borderWidth: 1, borderColor: '#334155' },
-  faultCardHeader: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center' },
-  faultCardLoc: { color: '#F8FAFC', fontWeight: 'bold', fontSize: 13 },
-  priorityBadge: { color: '#FFF', fontSize: 10, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, fontWeight: 'bold' },
-  faultCardDesc: { color: '#CBD5E1', fontSize: 12, textAlign: 'right', marginVertical: 4 },
-  faultCardMetaRow: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  faultCardMetaTxt: { color: '#94A3B8', fontSize: 10 },
-  voiceAttachedTag: { color: '#38BDF8', fontSize: 10, fontWeight: 'bold' },
+  sectionHeaderTxt: { color: '#FFFFFF', fontSize: 14, fontWeight: 'bold', textAlign: 'right', marginBottom: 12 },
+  faultCard: { backgroundColor: '#1E293B', borderRadius: 12, padding: 14, marginBottom: 10, borderWidth: 1.5, borderColor: '#334155' },
+  faultCardTop: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center' },
+  faultLocation: { color: '#F8FAFC', fontWeight: 'bold', fontSize: 14 },
+  badgeTag: { color: '#FFF', fontSize: 10, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, fontWeight: 'bold' },
+  faultIssueTxt: { color: '#38BDF8', fontSize: 14, fontWeight: 'bold', textAlign: 'right', marginVertical: 6 },
+  faultMetaTxt: { color: '#94A3B8', fontSize: 11, textAlign: 'right', marginBottom: 8 },
+  voiceIndicator: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginBottom: 10 },
 
-  faultActionsRow: { flexDirection: 'row-reverse', gap: 8, alignItems: 'center' },
-  btnStatusCycle: { flex: 1, paddingVertical: 8, borderRadius: 6, alignItems: 'center' },
-  btnStatusCycleTxt: { color: '#FFF', fontWeight: 'bold', fontSize: 11 },
-  btnWhatsappQuick: { backgroundColor: '#25D366', padding: 8, borderRadius: 6, justifyContent: 'center', alignItems: 'center' },
+  cardActionsRow: { flexDirection: 'row-reverse', gap: 8, alignItems: 'center' },
+  btnCycleStatus: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
+  btnCycleStatusTxt: { color: '#FFF', fontWeight: 'bold', fontSize: 12 },
+  btnWhatsApp: { backgroundColor: '#25D366', padding: 12, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
 
-  btnScanBig: { backgroundColor: '#0284C7', borderRadius: 14, padding: 22, alignItems: 'center', justifyContent: 'center', marginTop: 14, gap: 6 },
-  btnScanBigTxt: { color: '#FFF', fontSize: 15, fontWeight: 'bold' },
-  logCard: { backgroundColor: '#1E293B', padding: 12, borderRadius: 8, marginTop: 8, borderWidth: 1, borderColor: '#334155' },
-  logCardPoint: { color: '#FFF', fontWeight: 'bold', fontSize: 12 },
-  logCardStatus: { color: '#10B981', fontSize: 11, fontWeight: 'bold' },
-  logCardTime: { color: '#94A3B8', fontSize: 10, textAlign: 'right', marginTop: 4 },
+  bigScanCard: { backgroundColor: '#0284C7', borderRadius: 16, padding: 24, alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 10 },
+  bigScanTitle: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+  bigScanSub: { color: '#E0F2FE', fontSize: 11 },
+  pdfExportBtn: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#1E293B', borderWidth: 1, borderColor: '#38BDF8', padding: 14, borderRadius: 10, marginTop: 14 },
+  pdfExportBtnTxt: { color: '#38BDF8', fontWeight: 'bold', fontSize: 13 },
 
-  checklistItem: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10, backgroundColor: '#1E293B', padding: 14, borderRadius: 10, marginBottom: 8, borderWidth: 1, borderColor: '#334155' },
-  checklistItemActive: { borderColor: '#10B981', backgroundColor: '#132A38' },
-  checklistItemTxt: { color: '#CBD5E1', fontSize: 12, fontWeight: 'bold', flex: 1, textAlign: 'right' },
-  btnSaveChecklist: { backgroundColor: '#10B981', paddingVertical: 12, borderRadius: 10, alignItems: 'center', marginTop: 14 },
-  btnSaveChecklistTxt: { color: '#FFF', fontWeight: 'bold', fontSize: 13 },
+  checklistCard: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12, backgroundColor: '#1E293B', padding: 16, borderRadius: 10, marginBottom: 10, borderWidth: 1, borderColor: '#334155' },
+  checklistCardChecked: { borderColor: '#10B981', backgroundColor: '#132A38' },
+  checklistCardTxt: { color: '#CBD5E1', fontSize: 13, fontWeight: 'bold', flex: 1, textAlign: 'right' },
+  btnSaveChecklist: { backgroundColor: '#10B981', paddingVertical: 14, borderRadius: 10, alignItems: 'center', marginTop: 14 },
+  btnSaveChecklistTxt: { color: '#FFF', fontWeight: 'bold', fontSize: 14 },
 
-  navBottom: { flexDirection: 'row', height: 54, backgroundColor: '#1E293B', borderTopWidth: 1, borderColor: '#334155', justifyContent: 'space-around', alignItems: 'center' },
-  navBtn: { alignItems: 'center', justifyContent: 'center' },
-  navBtnTxt: { color: '#94A3B8', fontSize: 10, marginTop: 2 },
-  navBtnTxtActive: { color: '#38BDF8', fontWeight: 'bold' },
+  bottomNav: { flexDirection: 'row', height: 56, backgroundColor: '#1E293B', borderTopWidth: 1, borderColor: '#334155', justifyContent: 'space-around', alignItems: 'center' },
+  navTabBtn: { alignItems: 'center', justifyContent: 'center' },
+  navTabTxt: { color: '#94A3B8', fontSize: 10, marginTop: 2 },
+  navTabTxtActive: { color: '#38BDF8', fontWeight: 'bold' },
 
-  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  sheetCard: { backgroundColor: '#1E293B', borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 18, borderTopWidth: 2, borderColor: '#38BDF8' },
-  faultFastCard: { backgroundColor: '#1E293B', borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 16, borderTopWidth: 2, borderColor: '#EF4444' },
-  sheetHeader: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center' },
-  sheetTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: 'bold', textAlign: 'right' },
-  actionButtonsRow: { flexDirection: 'row-reverse', gap: 10, marginTop: 12 },
-  btnAction: { flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', flexDirection: 'row-reverse', justifyContent: 'center', gap: 6 },
-  btnActionTxt: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 11 },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
+  drawerCard: { backgroundColor: '#1E293B', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 18, borderTopWidth: 2, borderColor: '#38BDF8' },
+  reportModalCard: { backgroundColor: '#1E293B', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 18, borderTopWidth: 2, borderColor: '#EF4444' },
+  drawerHeader: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  drawerTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
 
-  quickIssueBtn: { backgroundColor: '#0F172A', paddingVertical: 9, paddingHorizontal: 12, borderRadius: 6, marginBottom: 6, borderWidth: 1, borderColor: '#334155', alignItems: 'flex-end' },
-  quickIssueBtnActive: { backgroundColor: '#0284C7', borderColor: '#38BDF8' },
-  quickIssueBtnTxt: { color: '#CBD5E1', fontSize: 11, fontWeight: 'bold' },
+  btnActionLarge: { paddingVertical: 12, borderRadius: 10, alignItems: 'center', flexDirection: 'row-reverse', justifyContent: 'center', gap: 8 },
+  btnActionLargeTxt: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 12 },
 
-  voiceSection: { marginVertical: 10 },
-  btnVoiceRecord: { backgroundColor: '#334155', paddingVertical: 10, borderRadius: 8, flexDirection: 'row-reverse', justifyContent: 'center', alignItems: 'center', gap: 8 },
-  btnVoiceRecordTxt: { color: '#FFF', fontSize: 11, fontWeight: 'bold' },
+  presetItemBtn: { backgroundColor: '#0F172A', paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, marginBottom: 6, borderWidth: 1, borderColor: '#334155', alignItems: 'flex-end' },
+  presetItemTxt: { color: '#CBD5E1', fontSize: 12, fontWeight: 'bold' },
+
+  btnVoice: { backgroundColor: '#334155', paddingVertical: 12, borderRadius: 8, flexDirection: 'row-reverse', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 10 },
+  btnVoiceTxt: { color: '#FFF', fontSize: 11, fontWeight: 'bold' },
 
   renameBox: { backgroundColor: '#1E293B', margin: 20, borderRadius: 14, padding: 16, borderWidth: 1.5, borderColor: '#38BDF8', alignSelf: 'center', width: '90%' },
   renameInput: { backgroundColor: '#0F172A', color: '#FFFFFF', borderRadius: 8, padding: 10, textAlign: 'right', borderWidth: 1, borderColor: '#334155' },
