@@ -16,9 +16,9 @@ import { Ionicons } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// البيانات الهندسية الأولية المطابقة للمخطط المعماري الحقيقي
+// البيانات الهندسية المحدثة وفق الاتجاه المعماري الصحيح
 const INITIAL_BLUEPRINT_ROOMS = {
-  // الجناح الأيسر (1-5)
+  // 1. الجناح الأيسر (صفوف 1 - 5)
   left_wing: [
     { id: 'l_g5_1', name: 'الصف الخامس 4', type: 'class', block: 'الخامس' },
     { id: 'l_g5_2', name: 'الصف الخامس 5', type: 'class', block: 'الخامس' },
@@ -50,7 +50,7 @@ const INITIAL_BLUEPRINT_ROOMS = {
     { id: 'l_g1_tea', name: 'غرفة المعلمين', type: 'teachers', block: 'الأول' },
   ],
 
-  // الخدمات والمرافق المركزية
+  // 2. القطاع الأوسط (الخدمات والمرافق المركزية)
   center_wing: [
     { id: 'c_cafe_l', name: 'كافتيريا (يسار)', type: 'cafe' },
     { id: 'c_serv', name: 'خدمات الكافتيريا ومصلى', type: 'services' },
@@ -71,7 +71,7 @@ const INITIAL_BLUEPRINT_ROOMS = {
     { id: 'c_admin_2', name: 'الإدارة وشؤون الطلاب', type: 'admin' },
   ],
 
-  // الجناح الأيمن (3-6)
+  // 3. الجناح الأيمن (صفوف 3 - 6)
   right_wing: [
     { id: 'r_g6_adm', name: 'الإدارة', type: 'admin', block: 'السادس' },
     { id: 'r_g6_1', name: 'الصف السادس 6', type: 'class', block: 'السادس' },
@@ -109,19 +109,16 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('map');
   const [zoomScale, setZoomScale] = useState(1.0);
 
-  // إدارة الغرفة المحددة
   const [currentRoom, setCurrentRoom] = useState(null);
   const [currentWingKey, setCurrentWingKey] = useState(null);
   const [drawerVisible, setDrawerVisible] = useState(false);
 
-  // نافذة إعادة التسمية الميدانية
   const [renameModalVisible, setRenameModalVisible] = useState(false);
   const [editedName, setEditedName] = useState('');
 
-  // إدارة البلاغات
   const [faults, setFaults] = useState([
-    { id: 'f1', zone_id: 'l_g5_1', location: 'الصف الخامس 4', type: 'تكييف', problem: 'تسريب مياه', status: 'new' },
-    { id: 'f2', zone_id: 'c_pool', location: 'المسبح الرياضي والمدرجات', type: 'سباكة', problem: 'مضخة الفلتر معطلة', status: 'in_progress' },
+    { id: 'f1', zone_id: 'l_g5_1', location: 'الصف الخامس 4', problem: 'تسريب مياه', status: 'new' },
+    { id: 'f2', zone_id: 'c_pool', location: 'المسبح الرياضي والمدرجات', problem: 'مضخة الفلتر معطلة', status: 'in_progress' },
   ]);
 
   const handleRoomClick = (room, wingKey) => {
@@ -130,7 +127,6 @@ export default function App() {
     setDrawerVisible(true);
   };
 
-  // حفظ التسمية الجديدة للغرفة في المخطط
   const handleSaveRename = () => {
     if (!editedName.trim()) return;
     const updatedWing = roomsData[currentWingKey].map((rm) =>
@@ -139,7 +135,7 @@ export default function App() {
     setRoomsData({ ...roomsData, [currentWingKey]: updatedWing });
     setCurrentRoom({ ...currentRoom, name: editedName.trim() });
     setRenameModalVisible(false);
-    Alert.alert('تم التحديث بنجاح ✅', `تم اعتماد المسمى الجديد: "${editedName.trim()}"`);
+    Alert.alert('تم الحفظ بنجاح ✅', `تم اعتماد المسمى الجديد: "${editedName.trim()}"`);
   };
 
   const getFaultCount = (roomId) => faults.filter((f) => f.zone_id === roomId && f.status !== 'resolved').length;
@@ -187,7 +183,7 @@ export default function App() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
 
-      {/* الشريط العلوي للمخطط */}
+      {/* شريط العنوان */}
       <View style={styles.topBar}>
         <Text style={styles.topBarTitle}>المخطط الهندسي التفاعلي لمجمع زايد التعليمي</Text>
         <TouchableOpacity
@@ -200,7 +196,6 @@ export default function App() {
 
       {activeTab === 'map' ? (
         <ScrollView style={{ flex: 1 }}>
-          {/* شريط التحكم في التكبير */}
           <View style={styles.controlsBar}>
             <Text style={styles.controlsTxt}>↔️ اسحب الشاشة للتنقل الكامل عبر المخطط</Text>
             <View style={{ flexDirection: 'row-reverse', gap: 6 }}>
@@ -216,13 +211,13 @@ export default function App() {
             </View>
           </View>
 
-          {/* مساحة المخطط المعماري الكامل (تطابق 1:1 مع الصورة) */}
+          {/* مساحة المخطط: تم ضبط flexDirection: 'row' لعكس الاتجاه بالكامل */}
           <View style={styles.canvasWrapper}>
             <ScrollView horizontal showsHorizontalScrollIndicator={true} nestedScrollEnabled={true}>
               <ScrollView showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
                 <View style={[styles.blueprintCanvas, { width: 1080 * zoomScale, height: 1400 * zoomScale, transform: [{ scale: zoomScale }] }]}>
                   
-                  {/* 1. الجناح الأيسر: جناح الصفوف 1-5 */}
+                  {/* الجناح الأيسر الآن: جناح الصفوف 1-5 */}
                   <View style={styles.wingColumn}>
                     <Text style={styles.wingHeaderTitle}>جناح الصفوف 1 - 5</Text>
                     <View style={styles.wingSectionCard}>
@@ -251,7 +246,7 @@ export default function App() {
                     </View>
                   </View>
 
-                  {/* 2. القطاع الأوسط: الخدمات والمرافق المركزية */}
+                  {/* القطاع الأوسط: الخدمات والمرافق المركزية */}
                   <View style={[styles.wingColumn, { width: 350 }]}>
                     <Text style={styles.wingHeaderTitle}>الخدمات والمرافق المركزية</Text>
                     
@@ -285,7 +280,7 @@ export default function App() {
                     </View>
                   </View>
 
-                  {/* 3. الجناح الأيمن: جناح الصفوف 3-6 */}
+                  {/* الجناح الأيمن الآن: جناح الصفوف 3-6 */}
                   <View style={styles.wingColumn}>
                     <Text style={styles.wingHeaderTitle}>جناح الصفوف 3 - 6</Text>
                     <View style={styles.wingSectionCard}>
@@ -333,7 +328,7 @@ export default function App() {
         </ScrollView>
       )}
 
-      {/* شريط التبويبات السفلي */}
+      {/* التبويبات السفلية */}
       <View style={styles.navBottom}>
         <TouchableOpacity style={styles.navBtn} onPress={() => setActiveTab('map')}>
           <Ionicons name="map" size={22} color={activeTab === 'map' ? '#38BDF8' : '#94A3B8'} />
@@ -345,7 +340,7 @@ export default function App() {
         </TouchableOpacity>
       </View>
 
-      {/* نافذة خيارات الغرفة والتعديل الميداني */}
+      {/* نافذة تفاصيل الغرفة */}
       <Modal visible={drawerVisible} transparent={true} animationType="slide">
         <View style={styles.modalBg}>
           <View style={styles.sheetCard}>
@@ -384,7 +379,7 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* نافذة تعديل التسمية الميدانية بلمسة واحدة */}
+      {/* نافذة إعادة التسمية الميدانية */}
       <Modal visible={renameModalVisible} transparent={true} animationType="fade">
         <View style={styles.modalBg}>
           <View style={styles.renameBox}>
@@ -425,13 +420,14 @@ const styles = StyleSheet.create({
   btnToolTxt: { color: '#FFF', fontSize: 11, fontWeight: 'bold' },
 
   canvasWrapper: { height: 570, backgroundColor: '#0F172A', marginHorizontal: 8, marginTop: 6, borderRadius: 12, borderWidth: 2, borderColor: '#334155', overflow: 'hidden' },
-  blueprintCanvas: { backgroundColor: '#0B132B', flexDirection: 'row-reverse', padding: 12, gap: 14 },
+  // التعديل الأساسي: flexDirection: 'row' لعرض الجناح الأيسر يساراً والأيمن يميناً
+  blueprintCanvas: { backgroundColor: '#0B132B', flexDirection: 'row', padding: 12, gap: 14 },
 
   wingColumn: { width: 340, gap: 8 },
   wingHeaderTitle: { color: '#38BDF8', fontSize: 14, fontWeight: 'bold', textAlign: 'center', backgroundColor: '#1E293B', paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: '#334155', marginBottom: 2 },
   wingSectionCard: { backgroundColor: '#131F37', borderRadius: 8, padding: 6, borderWidth: 1, borderColor: '#1E293B', gap: 6 },
   blockTitle: { color: '#94A3B8', fontSize: 10.5, fontWeight: 'bold', textAlign: 'center' },
-  gridRowWrap: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 4, justifyContent: 'space-between' },
+  gridRowWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, justifyContent: 'space-between' },
 
   roomItem: { width: '31.5%', borderRadius: 6, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', padding: 4, position: 'relative' },
   roomItemText: { fontSize: 9.5, fontWeight: 'bold', textAlign: 'center', color: '#0F172A' },
