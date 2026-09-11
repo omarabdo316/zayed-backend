@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// قائمة المشاكل الشائعة الجاهزة (تغني عن الكتابة نهائياً)
+// قائمة المشاكل الشائعة الجاهزة (تغني عن الكتابة نهائياً للمستخدمين غير المؤهلين)
 const COMMON_PROBLEMS = [
   { id: 'ac_hot', label: 'المكيف لا يبرد ❄️', type: 'تكييف', priority: 'عالي' },
   { id: 'water_leak', label: 'تسريب مياه 💧', type: 'سباكة', priority: 'عالي' },
@@ -51,7 +51,7 @@ export default function App() {
       problem: 'مقبس كهرباء خطير ⚡',
       type: 'كهرباء',
       priority: 'طوارئ',
-      status: 'new', // new, in_progress, resolved
+      status: 'new',
       time: '08:30 ص',
     },
     {
@@ -99,7 +99,7 @@ export default function App() {
     Alert.alert('تم تسجيل البلاغ بنجاح 🚨', `الموقع: ${newFault.location}\nالمشكلة: ${newFault.problem}`);
   };
 
-  // تبديل حالة البلاغ بلمسة واحدة (جديد -> جاري العمل -> تم الحل)
+  // تبديل حالة البلاغ بلمسة واحدة
   const cycleFaultStatus = (faultId) => {
     setFaults(
       faults.map((item) => {
@@ -119,7 +119,6 @@ export default function App() {
     );
   };
 
-  // تصفية البلاغات
   const filteredFaults = faults.filter((f) => {
     if (activeFilter === 'all') return true;
     if (activeFilter === 'urgent') return f.priority === 'طوارئ' || f.priority === 'عالي';
@@ -128,7 +127,6 @@ export default function App() {
     return true;
   });
 
-  // رسم مربع القاعة داخل المخطط
   const renderRoom = (id, name, icon, isWide = false, customHeight = 68, bg = '#FEF3C7', border = '#F59E0B') => {
     const activeAlerts = getActiveFaultsForRoom(id, name);
     const hasFault = activeAlerts.length > 0;
@@ -169,7 +167,7 @@ export default function App() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
 
-      {/* الشريط العلوي المبسط */}
+      {/* الشريط العلوي */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>نظام صيانة مجمع زايد الميداني</Text>
         <TouchableOpacity
@@ -182,14 +180,14 @@ export default function App() {
         </TouchableOpacity>
       </View>
 
-      {/* شريط الفلاتر السريعة بالألوان */}
+      {/* شريط الفلاتر السريعة */}
       <View style={styles.filterBar}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 10, gap: 8 }}>
           {[
-            { id: 'all', title: `كافة البلاغات (${faults.length})`, icon: 'apps-outline' },
-            { id: 'open', title: `تحت المعالجة (${faults.filter(f => f.status !== 'resolved').length})`, icon: 'time-outline' },
-            { id: 'urgent', title: '🔴 طوارئ وعاجل', icon: 'warning-outline' },
-            { id: 'done', title: `✅ تم إصلاحه (${faults.filter(f => f.status === 'resolved').length})`, icon: 'checkmark-circle-outline' },
+            { id: 'all', title: `كافة البلاغات (${faults.length})` },
+            { id: 'open', title: `تحت المعالجة (${faults.filter(f => f.status !== 'resolved').length})` },
+            { id: 'urgent', title: '🔴 طوارئ وعاجل' },
+            { id: 'done', title: `✅ تم إصلاحه (${faults.filter(f => f.status === 'resolved').length})` },
           ].map((flt) => (
             <TouchableOpacity
               key={flt.id}
@@ -204,10 +202,9 @@ export default function App() {
         </ScrollView>
       </View>
 
-      {/* التبويب النشط */}
+      {/* المحتوى الرئيسي بحسب التبويب */}
       {activeTab === 'map' ? (
         <ScrollView style={{ flex: 1 }}>
-          {/* إرشادات وأدوات التكبير */}
           <View style={styles.zoomControlBar}>
             <Text style={styles.zoomControlTitle}>👈 اسحب الشاشة يميناً ويساراً للتصفح</Text>
             <View style={styles.zoomButtonsRow}>
@@ -218,7 +215,7 @@ export default function App() {
                 <Text style={styles.btnZoomText}>➖ تصغير</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setZoomScale(1.0)} style={[styles.btnZoom, { backgroundColor: '#475569' }]}>
-                <Text style={styles.btnZoomText}>🔄 إعادة ضبط</Text>
+                <Text style={styles.btnZoomText}>🔄 ضبط</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -334,7 +331,7 @@ export default function App() {
             </ScrollView>
           </View>
 
-          {/* القائمة السريعة المباشرة بالأسفل للأماكن */}
+          {/* قائمة الأماكن المباشرة بالأسفل */}
           <View style={styles.quickNavSection}>
             <Text style={styles.quickNavTitle}>الأجنحة والصفوف المباشرة (انقر للإبلاغ فوراً):</Text>
             <View style={styles.quickNavGrid}>
@@ -374,7 +371,7 @@ export default function App() {
           </View>
         </ScrollView>
       ) : activeTab === 'home' ? (
-        /* تبويب الرئيسية: شاشة بسيطة جداً للإحصائيات */
+        /* تبويب الرئيسية */
         <ScrollView style={styles.homeContent}>
           <Text style={styles.sectionHeader}>📊 حالة المجمع اليوم</Text>
           <View style={styles.statsContainer}>
@@ -407,7 +404,7 @@ export default function App() {
           </View>
         </ScrollView>
       ) : activeTab === 'faults' ? (
-        /* تبويب إدارة الأعطال بنقرة واحدة */
+        /* تبويب إدارة الأعطال */
         <ScrollView style={styles.faultsList}>
           <Text style={styles.sectionHeader}>قائمة البلاغات الميدانية ({filteredFaults.length})</Text>
           <Text style={styles.subHintText}>💡 انقر على زر الحالة الملون بالأسفل لتغيير حالة العطل مباشرة</Text>
@@ -435,7 +432,6 @@ export default function App() {
                 <Text style={styles.faultTimeText}>التوقيت: {f.time} | النوع: {f.type}</Text>
 
                 <View style={styles.faultCardFooter}>
-                  {/* زر التغيير السريع للحالة باللمس */}
                   <TouchableOpacity
                     style={[
                       styles.btnStatusToggle,
@@ -464,7 +460,7 @@ export default function App() {
           })}
         </ScrollView>
       ) : (
-        /* تبويب المواقع والتفتيش */
+        /* تبويب الجولات */
         <ScrollView style={styles.faultsList}>
           <Text style={styles.sectionHeader}>📍 نقاط التفتيش الأمني والخدمي</Text>
           <TouchableOpacity
@@ -477,7 +473,7 @@ export default function App() {
         </ScrollView>
       )}
 
-      {/* الشريط السفلي بأيقونات واضحة وكبيرة */}
+      {/* الشريط السفلي */}
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.navItem} onPress={() => setActiveTab('home')}>
           <Ionicons name="home-outline" size={24} color={activeTab === 'home' ? '#38BDF8' : '#94A3B8'} />
@@ -497,7 +493,7 @@ export default function App() {
         </TouchableOpacity>
       </View>
 
-      {/* نافذة تفاصيل القاعة: أزرار ضخمة تناسب أي شخص */}
+      {/* نافذة تفاصيل القاعة */}
       <Modal visible={drawerVisible} transparent={true} animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.drawerCard}>
@@ -537,14 +533,13 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* نافذة الإبلاغ الذكية: اختيار بلمسة واحدة بدون كتابة */}
+      {/* نافذة الإبلاغ الذكية */}
       <Modal visible={modalNewFault} transparent={true} animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.easyInputCard}>
             <Text style={styles.easyModalTitle}>ما هي المشكلة في {selectedRoom?.name}؟</Text>
             <Text style={styles.easyModalSub}>اختر المشكلة بلمسة واحدة فقط 👇</Text>
 
-            {/* أزرار المشاكل الشائعة الجاهزة */}
             <ScrollView style={{ maxHeight: 220 }} showsVerticalScrollIndicator={false}>
               <View style={styles.presetGrid}>
                 {COMMON_PROBLEMS.map((pr) => {
@@ -567,7 +562,6 @@ export default function App() {
               </View>
             </ScrollView>
 
-            {/* اختيار مستوى الخطورة بلمسة واحدة */}
             <Text style={styles.priorityLabel}>مستوى الأهمية والخطورة:</Text>
             <View style={styles.prioritySelectorRow}>
               {[
@@ -590,7 +584,6 @@ export default function App() {
               ))}
             </View>
 
-            {/* أزرار التأكيد والإلغاء الضخمة */}
             <View style={styles.modalActionsRow}>
               <TouchableOpacity style={styles.btnConfirmBig} onPress={handleCreateFastFault}>
                 <Text style={styles.btnConfirmBigText}>تأكيد وإرسال البلاغ 🚀</Text>
