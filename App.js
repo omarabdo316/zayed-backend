@@ -11,13 +11,14 @@ import {
   SafeAreaView,
   StatusBar,
   Linking,
+  Image,
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// 1. التوزيع المعماري الدقيق (اليسار: 1-5 | الوسط: الخدمات والمسابح | اليمين: 3-6)
+// 1. التوزيع المعماري المعكوس الواقعي (اليسار: 1-5 | الوسط: الخدمات والمسابح | اليمين: 3-6)
 const INITIAL_ROOMS_DATA = {
   left_wing: [
     { id: 'l_g5_1', name: 'الصف الخامس 4', type: 'class', block: 'الخامس' },
@@ -99,84 +100,59 @@ const INITIAL_ROOMS_DATA = {
   ],
 };
 
-// 2. أعطال شائعة باللمس السريع (تلغي الحاجة للكتابة للمستخدمين غير المؤهلين)
-const EASY_FAULT_PRESETS = [
-  { id: 'p1', title: 'المكيف لا يبرد / حار ❄️', category: 'تكييف', priority: 'عاجل', color: '#0284C7' },
-  { id: 'p2', title: 'تسريب مياه أو ماسورة 💧', category: 'سباكة', priority: 'طوارئ', color: '#EF4444' },
-  { id: 'p3', title: 'كشاف أو لمبة مطفأة 💡', category: 'كهرباء', priority: 'عادي', color: '#F59E0B' },
-  { id: 'p4', title: 'مقبس كهربائي خطر ⚡', category: 'كهرباء', priority: 'طوارئ', color: '#EF4444' },
-  { id: 'p5', title: 'قفل أو مقبض الباب مكسور 🔒', category: 'أبواب', priority: 'عاجل', color: '#0284C7' },
-  { id: 'p6', title: 'كسر زجاج نافذة 🪟', category: 'سلامة', priority: 'طوارئ', color: '#EF4444' },
-  { id: 'p7', title: 'طاولة أو كرسي مكسور 🪑', category: 'أثاث', priority: 'عادي', color: '#64748B' },
-  { id: 'p8', title: 'انسداد تصريف الحمام 🚽', category: 'سباكة', priority: 'عاجل', color: '#F59E0B' },
-];
-
 export default function App() {
   const [roomsData, setRoomsData] = useState(INITIAL_ROOMS_DATA);
   const [selectedFloor, setSelectedFloor] = useState('ground');
-  const [activeTab, setActiveTab] = useState('map'); // map, lifecycle, inspection, checklist
+  const [activeTab, setActiveTab] = useState('map'); // map, faults, patrol
   const [zoomScale, setZoomScale] = useState(1.0);
 
   // إدارة الغرفة المحددة
   const [currentRoom, setCurrentRoom] = useState(null);
   const [currentWingKey, setCurrentWingKey] = useState(null);
   const [drawerVisible, setDrawerVisible] = useState(false);
+
+  // نافذة تعديل التسمية
   const [renameModalVisible, setRenameModalVisible] = useState(false);
   const [editedName, setEditedName] = useState('');
 
-  // نافذة التبليغ السريع
+  // نافذة التبليغ والتفسير اليدوي المفصل
   const [reportModalVisible, setReportModalVisible] = useState(false);
-  const [selectedPreset, setSelectedPreset] = useState(EASY_FAULT_PRESETS[0]);
-  const [hasVoiceNote, setHasVoiceNote] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
+  const [manualDescription, setManualDescription] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('سباكة');
+  const [selectedPriority, setSelectedPriority] = useState('عاجل');
+  const [attachedPhoto, setAttachedPhoto] = useState(null);
 
-  // قاعدة بيانات دورة الصيانة
+  // نافذة استعراض الصورة المكبرة
+  const [previewPhotoModal, setPreviewPhotoModal] = useState(false);
+  const [activePreviewImage, setActivePreviewImage] = useState(null);
+
+  // سجل الأعطال المفصلة
   const [faults, setFaults] = useState([
     {
       id: 'F-101',
       zone_id: 'l_g5_1',
       location: 'الصف الخامس 4',
-      problem: 'تسريب مياه أو ماسورة 💧',
-      category: 'سباكة',
+      description: 'تسريب مياه مستمر من وحدة التكييف الداخلية يسقط مباشرة على أرضية الفصل وبجوار القواطع الكهربائية.',
+      category: 'تكييف وسباكة',
       priority: 'طوارئ',
-      status: 'new', // new (جديد) -> working (جاري) -> closed (تم الحل)
-      technician: 'فني السباكة - راشد',
-      time: '08:15 ص',
-      hasVoice: false,
+      status: 'new', // new -> working -> closed
+      time: '08:20 ص',
+      hasPhoto: true,
+      photoUri: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400',
     },
     {
       id: 'F-102',
       zone_id: 'c_pool',
       location: 'المسبح الرياضي والمدرجات',
-      problem: 'المكيف لا يبرد / حار ❄️',
-      category: 'تكييف',
+      description: 'صوت اهتزاز عالي جداً يصدر من مضخة الفلترة رقم 2 في غرفة المعدات مع بطء في دوران المياه.',
+      category: 'معدات ومسابح',
       priority: 'عاجل',
       status: 'working',
-      technician: 'فني التكييف - كومار',
-      time: '09:00 ص',
-      hasVoice: true,
-    },
-    {
-      id: 'F-103',
-      zone_id: 'r_g6_1',
-      location: 'الصف السادس 6',
-      problem: 'كشاف أو لمبة مطفأة 💡',
-      category: 'كهرباء',
-      priority: 'عادي',
-      status: 'closed',
-      technician: 'فني الكهرباء - محمد',
-      time: 'أمس',
-      hasVoice: false,
+      time: '09:15 ص',
+      hasPhoto: true,
+      photoUri: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=400',
     },
   ]);
-
-  // قائمة الفحص المسائي
-  const [dailyChecklist, setDailyChecklist] = useState({
-    doors: false,
-    ac: false,
-    lights: false,
-    windows: false,
-  });
 
   const handleRoomClick = (room, wingKey) => {
     setCurrentRoom(room);
@@ -184,38 +160,71 @@ export default function App() {
     setDrawerVisible(true);
   };
 
-  // تسجيل البلاغ بنقرة واحدة
-  const handleCreateReport = () => {
-    const newFault = {
-      id: `F-${Date.now().toString().slice(-3)}`,
-      zone_id: currentRoom ? currentRoom.id : 'general',
-      location: currentRoom ? currentRoom.name : 'المجمع العام',
-      problem: selectedPreset.title,
-      category: selectedPreset.category,
-      priority: selectedPreset.priority,
-      status: 'new',
-      technician: 'بانتظار التكليف',
-      time: 'الآن',
-      hasVoice: hasVoiceNote,
-    };
-    setFaults([newFault, ...faults]);
-    setReportModalVisible(false);
-    setDrawerVisible(false);
-    setHasVoiceNote(false);
-    Alert.alert('تم تسجيل البلاغ بنجاح 🚨', `الموقع: ${newFault.location}\nالمشكلة: ${newFault.problem}`);
+  // التقاط أو اختيار صورة لحالة العطل
+  const handleAttachPhoto = () => {
+    Alert.alert(
+      'توثيق حالة العطل بالصورة 📸',
+      'اختر طريقة توثيق حالة العطل في هذا الموقع:',
+      [
+        {
+          text: 'التقاط صورة بالكاميرا 📷',
+          onPress: () => {
+            // صورة نموذجية واقعية للتوثيق الميداني الفوري
+            setAttachedPhoto('https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400');
+            Alert.alert('تم التوثيق بنجاح ✅', 'تم التقاط صورة حالة العطل وربطها بالبلاغ.');
+          },
+        },
+        {
+          text: 'اختيار صورة من الاستوديو 🖼️',
+          onPress: () => {
+            setAttachedPhoto('https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=400');
+            Alert.alert('تم الإرفاق بنجاح ✅', 'تم اختيار صورة العطل من الهاتف.');
+          },
+        },
+        { text: 'إلغاء', style: 'cancel' },
+      ]
+    );
   };
 
-  // التبديل الدوري السهل لدورة حياة العطل (جديد ⬅️ جاري العمل ⬅️ تم الحل)
-  const advanceFaultLifecycle = (faultId) => {
+  // حفظ بلاغ العطل مع التفسير اليدوي والصورة
+  const handleSaveFaultReport = () => {
+    if (!manualDescription.trim()) {
+      Alert.alert('يرجى الانتباه ⚠️', 'يرجى كتابة تفسير وتوصيف للمشكلة لتسهيل عمل الفني.');
+      return;
+    }
+
+    const newFault = {
+      id: `F-${Date.now().toString().slice(-3)}`,
+      zone_id: currentRoom ? currentRoom.id : 'gen',
+      location: currentRoom ? currentRoom.name : 'المجمع العام',
+      description: manualDescription.trim(),
+      category: selectedCategory,
+      priority: selectedPriority,
+      status: 'new',
+      time: 'الآن',
+      hasPhoto: attachedPhoto !== null,
+      photoUri: attachedPhoto || 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400',
+    };
+
+    setFaults([newFault, ...faults]);
+    setManualDescription('');
+    setAttachedPhoto(null);
+    setReportModalVisible(false);
+    setDrawerVisible(false);
+
+    Alert.alert(
+      'تم تسجيل البلاغ والتفسير بنجاح 🚨',
+      `الموقع: ${newFault.location}\nالتوصيف: ${newFault.description.slice(0, 50)}...`
+    );
+  };
+
+  // دورة الصيانة (جديد -> جاري العمل -> تم الحل)
+  const advanceFaultStatus = (id) => {
     setFaults(
       faults.map((f) => {
-        if (f.id === faultId) {
-          if (f.status === 'new') {
-            return { ...f, status: 'working', technician: 'فريق الصيانة الميداني' };
-          }
-          if (f.status === 'working') {
-            return { ...f, status: 'closed' };
-          }
+        if (f.id === id) {
+          if (f.status === 'new') return { ...f, status: 'working' };
+          if (f.status === 'working') return { ...f, status: 'closed' };
           return { ...f, status: 'new' };
         }
         return f;
@@ -223,16 +232,16 @@ export default function App() {
     );
   };
 
-  // إرسال واتساب مباشر بدون كتابة
-  const sendWhatsAppTicket = (f) => {
-    const text = `*🚨 بلاغ صيانة عاجل - مجمع زايد التعليمي*\n• كود البلاغ: ${f.id}\n• الموقع: ${f.location}\n• المشكلة: ${f.problem}\n• الأولوية: ${f.priority}\n• الحالة: ${f.status === 'new' ? 'جديد ⏳' : f.status === 'working' ? 'جاري الإصلاح 🛠️' : 'تم الحل ✅'}`;
+  // إرسال التفسير اليدوي المكتوب مباشرة عبر واتساب
+  const sendWhatsAppWithDetails = (f) => {
+    const text = `*🚨 بلاغ صيانة مع التفسير - مجمع زايد التعليمي*\n• الموقع: ${f.location}\n• التصنيف: ${f.category} (${f.priority})\n• تفسير المشكلة:\n"${f.description}"\n• الحالة: ${f.status === 'new' ? 'جديد ⏳' : f.status === 'working' ? 'جاري الإصلاح 🛠️' : 'تم الحل ✅'}\n• توثيق مصور: ${f.hasPhoto ? 'مرفق صورة للعطل 📸' : 'بدون صورة'}`;
     const url = `whatsapp://send?text=${encodeURIComponent(text)}`;
     Linking.openURL(url).catch(() => {
-      Alert.alert('تنبيه', 'تطبيق واتساب غير مثبت على هاتفك.');
+      Alert.alert('تنبيه', 'تطبيق واتساب غير مثبت على هذا الهاتف.');
     });
   };
 
-  // حفظ التسمية المعدلة للقاعة
+  // حفظ اسم القاعة الجديد
   const handleSaveRename = () => {
     if (!editedName.trim()) return;
     const updated = roomsData[currentWingKey].map((r) =>
@@ -241,7 +250,7 @@ export default function App() {
     setRoomsData({ ...roomsData, [currentWingKey]: updated });
     setCurrentRoom({ ...currentRoom, name: editedName.trim() });
     setRenameModalVisible(false);
-    Alert.alert('تم التعديل بنجاح ✅', `المسمى المعتمد: "${editedName.trim()}"`);
+    Alert.alert('تم التعديل ✅', `الاسم المعتمد: "${editedName.trim()}"`);
   };
 
   const getActiveFaultsCount = (roomId) =>
@@ -290,8 +299,8 @@ export default function App() {
       {/* 1. الشريط العلوي */}
       <View style={styles.topBar}>
         <View>
-          <Text style={styles.topBarTitle}>نظام الصيانة الميداني المتكامل</Text>
-          <Text style={styles.topBarSub}>مجمع زايد التعليمي - كود التشغيل السريع</Text>
+          <Text style={styles.topBarTitle}>نظام التوثيق الميداني ورصد الأعطال</Text>
+          <Text style={styles.topBarSub}>مجمع زايد التعليمي - توصيف يدوي وتوثيق بالصور</Text>
         </View>
         <TouchableOpacity
           style={styles.btnFloor}
@@ -301,10 +310,10 @@ export default function App() {
         </TouchableOpacity>
       </View>
 
-      {/* 2. المحتوى بحسب التبويب النشط */}
+      {/* 2. المحتوى بحسب التبويب */}
       {activeTab === 'map' ? (
         <ScrollView style={{ flex: 1 }}>
-          {/* شريط التحكم بالتكبير */}
+          {/* شريط التحكم بالتكبير والتنقل */}
           <View style={styles.controlsBar}>
             <Text style={styles.controlsTxt}>↔️ اسحب المخطط للتنقل بحرية كاملة</Text>
             <View style={{ flexDirection: 'row-reverse', gap: 6 }}>
@@ -320,7 +329,7 @@ export default function App() {
             </View>
           </View>
 
-          {/* مساحة المخطط المعماري الثلاثي (اليسار 1-5 | الوسط خدمات | اليمين 3-6) */}
+          {/* مساحة المخطط الثلاثي (اليسار: 1-5 | الوسط: الخدمات والمسابح | اليمين: 3-6) */}
           <View style={styles.canvasWrapper}>
             <ScrollView horizontal showsHorizontalScrollIndicator={true} nestedScrollEnabled={true}>
               <ScrollView showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
@@ -355,7 +364,7 @@ export default function App() {
                     </View>
                   </View>
 
-                  {/* القطاع الأوسط: المرافق المركزية */}
+                  {/* القطاع الأوسط: الخدمات والمرافق المركزية */}
                   <View style={[styles.wingColumn, { width: 350 }]}>
                     <Text style={styles.wingHeaderTitle}>الخدمات والمرافق المركزية</Text>
                     <View style={styles.gridRowWrap}>
@@ -417,32 +426,19 @@ export default function App() {
             </ScrollView>
           </View>
         </ScrollView>
-      ) : activeTab === 'lifecycle' ? (
-        /* 3. تبويب دورة حياة الصيانة (مبسط جداً للمستخدمين غير المؤهلين) */
+      ) : activeTab === 'faults' ? (
+        /* 3. تبويب سجل الأعطال المفصلة مع الصور والتفسير اليدوي */
         <ScrollView style={{ flex: 1, padding: 14 }}>
-          {/* مؤشرات الحالة الكبيرة */}
-          <View style={styles.statsRow}>
-            <View style={[styles.statBox, { borderColor: '#EF4444' }]}>
-              <Text style={[styles.statNumber, { color: '#EF4444' }]}>
-                {faults.filter((f) => f.status === 'new').length}
-              </Text>
-              <Text style={styles.statLabel}>🔴 جديد ⏳</Text>
-            </View>
-            <View style={[styles.statBox, { borderColor: '#F59E0B' }]}>
-              <Text style={[styles.statNumber, { color: '#F59E0B' }]}>
-                {faults.filter((f) => f.status === 'working').length}
-              </Text>
-              <Text style={styles.statLabel}>🟡 جاري الإصلاح 🛠️</Text>
-            </View>
-            <View style={[styles.statBox, { borderColor: '#10B981' }]}>
-              <Text style={[styles.statNumber, { color: '#10B981' }]}>
-                {faults.filter((f) => f.status === 'closed').length}
-              </Text>
-              <Text style={styles.statLabel}>🟢 تم الحل ✅</Text>
-            </View>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionHeaderTxt}>سجل التوصيف الميداني للأعطال ({faults.length})</Text>
+            <TouchableOpacity
+              style={styles.btnExportPdf}
+              onPress={() => Alert.alert('تقرير PDF 📄', 'تم استخراج التقرير الفني المرفق بتفسير الأعطال وصورها')}
+            >
+              <Ionicons name="document-text-outline" size={16} color="#FFF" />
+              <Text style={styles.btnExportPdfTxt}>كشف PDF</Text>
+            </TouchableOpacity>
           </View>
-
-          <Text style={styles.sectionHeaderTxt}>إدارة دورة حياة الأعطال (انقر على الزر الملون لتغيير المرحلة مباشرة):</Text>
 
           {faults.map((f) => {
             const isNew = f.status === 'new';
@@ -450,26 +446,49 @@ export default function App() {
             const isClosed = f.status === 'closed';
 
             return (
-              <View key={f.id} style={[styles.faultCard, isClosed && { opacity: 0.6, borderColor: '#10B981' }]}>
-                <View style={styles.faultCardTop}>
-                  <Text style={styles.faultLocation}>📍 {f.location}</Text>
-                  <Text style={[styles.badgeTag, { backgroundColor: isNew ? '#EF4444' : isWorking ? '#F59E0B' : '#10B981' }]}>
-                    {isNew ? 'بلاغ جديد' : isWorking ? 'قيد العمل' : 'مغلق ومحلول'}
-                  </Text>
+              <View key={f.id} style={[styles.detailedFaultCard, isClosed && { opacity: 0.6, borderColor: '#10B981' }]}>
+                {/* رأس الكارت */}
+                <View style={styles.detailedCardHeader}>
+                  <Text style={styles.detailedLocation}>📍 {f.location}</Text>
+                  <View style={{ flexDirection: 'row-reverse', gap: 6, alignItems: 'center' }}>
+                    <Text style={styles.categoryBadge}>{f.category}</Text>
+                    <Text
+                      style={[
+                        styles.priorityBadge,
+                        f.priority === 'طوارئ' ? { backgroundColor: '#EF4444' } : { backgroundColor: '#F59E0B' },
+                      ]}
+                    >
+                      {f.priority}
+                    </Text>
+                  </View>
                 </View>
 
-                <Text style={styles.faultIssueTxt}>{f.problem}</Text>
-                <Text style={styles.faultMetaTxt}>الفني المكلف: {f.technician} | التوقيت: {f.time}</Text>
+                {/* نص التفسير والتوصيف المكتوب باليد */}
+                <View style={styles.descriptionBox}>
+                  <Text style={styles.descriptionLabel}>📝 تفسير وتوصيف المشكلة الميداني:</Text>
+                  <Text style={styles.descriptionText}>{f.description}</Text>
+                </View>
 
-                {f.hasVoice && (
-                  <View style={styles.voiceIndicator}>
-                    <Ionicons name="mic" size={14} color="#38BDF8" />
-                    <Text style={{ color: '#38BDF8', fontSize: 11, fontWeight: 'bold' }}>مرفق تسجيل صوتي للعطل</Text>
+                {/* قسم الصورة المرفقة لحالة العطل */}
+                {f.hasPhoto && f.photoUri && (
+                  <View style={styles.photoContainer}>
+                    <Text style={styles.photoLabel}>📸 توثيق حالة العطل في الموقع:</Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setActivePreviewImage(f.photoUri);
+                        setPreviewPhotoModal(true);
+                      }}
+                    >
+                      <Image source={{ uri: f.photoUri }} style={styles.faultThumbnail} />
+                      <Text style={styles.photoClickHint}>🔍 انقر لتكبير الصورة وفحصها</Text>
+                    </TouchableOpacity>
                   </View>
                 )}
 
-                {/* زر النقل السريع بين مراحل الصيانة */}
-                <View style={styles.cardActionsRow}>
+                <Text style={styles.timeMeta}>🕒 توقيت البلاغ: {f.time} | كود: {f.id}</Text>
+
+                {/* أزرار الإجراءات والواتساب */}
+                <View style={styles.actionsRow}>
                   <TouchableOpacity
                     style={[
                       styles.btnCycleStatus,
@@ -477,16 +496,16 @@ export default function App() {
                       isWorking && { backgroundColor: '#F59E0B' },
                       isClosed && { backgroundColor: '#10B981' },
                     ]}
-                    onPress={() => advanceFaultLifecycle(f.id)}
+                    onPress={() => advanceFaultStatus(f.id)}
                   >
                     <Text style={styles.btnCycleStatusTxt}>
-                      {isNew && '⏳ انقر هنا لبدء العمل في الموقع'}
-                      {isWorking && '🛠️ قيد الإصلاح.. انقر للتأكيد والإغلاق'}
-                      {isClosed && '✅ تم إنجاز الصيانة بنجاح (مكتمل)'}
+                      {isNew && '⏳ انقر لبدء الإصلاح (جديد)'}
+                      {isWorking && '🛠️ جاري العمل.. انقر للإنهاء'}
+                      {isClosed && '✅ تم الإصلاح وإغلاق العطل'}
                     </Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity style={styles.btnWhatsApp} onPress={() => sendWhatsAppTicket(f)}>
+                  <TouchableOpacity style={styles.btnWhatsApp} onPress={() => sendWhatsAppWithDetails(f)}>
                     <Ionicons name="logo-whatsapp" size={20} color="#FFF" />
                   </TouchableOpacity>
                 </View>
@@ -494,63 +513,17 @@ export default function App() {
             );
           })}
         </ScrollView>
-      ) : activeTab === 'inspection' ? (
-        /* 4. تبويب التفتيش الأمني والـ QR */
+      ) : (
+        /* 4. تبويب الجولات الميدانية والـ QR */
         <ScrollView style={{ flex: 1, padding: 16 }}>
-          <Text style={styles.sectionHeaderTxt}>🛡️ نظام التفتيش الأمني والجولات الميدانية</Text>
+          <Text style={styles.sectionHeaderTxt}>🛡️ التفتيش الأمني وتوثيق الجولات بالباركود</Text>
           <TouchableOpacity
             style={styles.bigScanCard}
-            onPress={() => Alert.alert('مسح QR 📷', 'تم فتح الكاميرا.. امسح ملصق القاعة لتوثيق الجولة فوراً')}
+            onPress={() => Alert.alert('مسح QR 📷', 'فتح الكاميرا لمسح باركود القاعة وتوثيق المرور في النظام.')}
           >
-            <Ionicons name="qr-code-outline" size={48} color="#FFF" />
-            <Text style={styles.bigScanTitle}>مسح باركود القاعة وتوثيق المرور</Text>
-            <Text style={styles.bigScanSub}>يسجل التاريخ والوقت والحالة بدون كتابة</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.pdfExportBtn}
-            onPress={() => Alert.alert('تقرير PDF 📄', 'تم استخراج التقرير الأمني والفني المجمع بصيغة PDF جاهز للطباعة')}
-          >
-            <Ionicons name="document-text-outline" size={20} color="#FFF" />
-            <Text style={styles.pdfExportBtnTxt}>استخراج تقرير الصيانة الشامل (PDF)</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      ) : (
-        /* 5. تبويب قائمة الفحص المسائي (Checklist) */
-        <ScrollView style={{ flex: 1, padding: 16 }}>
-          <Text style={styles.sectionHeaderTxt}>📋 الفحص المسائي وإغلاق المجمع</Text>
-          <Text style={{ color: '#94A3B8', fontSize: 12, textAlign: 'right', marginBottom: 16 }}>
-            تحقق من النقاط الأربع بنقرة واحدة عند نهاية كل يوم عمل:
-          </Text>
-
-          {[
-            { key: 'doors', title: 'إغلاق وقفل كافة أبواب الأجنحة 🔒' },
-            { key: 'ac', title: 'إطفاء كافة وحدات التكييف والتهوية ❄️' },
-            { key: 'lights', title: 'إطفاء الإضاءة والممرات الداخلية 💡' },
-            { key: 'windows', title: 'التأكد من إحكام إغلاق النوافذ 🪟' },
-          ].map((item) => {
-            const checked = dailyChecklist[item.key];
-            return (
-              <TouchableOpacity
-                key={item.key}
-                style={[styles.checklistCard, checked && styles.checklistCardChecked]}
-                onPress={() => setDailyChecklist({ ...dailyChecklist, [item.key]: !checked })}
-              >
-                <Ionicons
-                  name={checked ? 'checkbox' : 'square-outline'}
-                  size={26}
-                  color={checked ? '#10B981' : '#94A3B8'}
-                />
-                <Text style={[styles.checklistCardTxt, checked && { color: '#FFF' }]}>{item.title}</Text>
-              </TouchableOpacity>
-            );
-          })}
-
-          <TouchableOpacity
-            style={styles.btnSaveChecklist}
-            onPress={() => Alert.alert('تم الاعتماد ✅', 'تم حفظ وتوثيق تقرير الإغلاق المسائي للمبنى.')}
-          >
-            <Text style={styles.btnSaveChecklistTxt}>حفظ واعتماد تقرير الإغلاق</Text>
+            <Ionicons name="qr-code-outline" size={44} color="#FFF" />
+            <Text style={styles.bigScanTitle}>مسح باركود القاعة وتوثيق الجولة</Text>
+            <Text style={styles.bigScanSub}>يسجل التاريخ والوقت تلقائياً لتقارير الأمن والسلامة</Text>
           </TouchableOpacity>
         </ScrollView>
       )}
@@ -561,21 +534,17 @@ export default function App() {
           <Ionicons name="map" size={22} color={activeTab === 'map' ? '#38BDF8' : '#94A3B8'} />
           <Text style={[styles.navTabTxt, activeTab === 'map' && styles.navTabTxtActive]}>المخطط</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navTabBtn} onPress={() => setActiveTab('lifecycle')}>
-          <Ionicons name="sync-circle-outline" size={24} color={activeTab === 'lifecycle' ? '#38BDF8' : '#94A3B8'} />
-          <Text style={[styles.navTabTxt, activeTab === 'lifecycle' && styles.navTabTxtActive]}>دورة الصيانة</Text>
+        <TouchableOpacity style={styles.navTabBtn} onPress={() => setActiveTab('faults')}>
+          <Ionicons name="alert-circle-outline" size={22} color={activeTab === 'faults' ? '#38BDF8' : '#94A3B8'} />
+          <Text style={[styles.navTabTxt, activeTab === 'faults' && styles.navTabTxtActive]}>الأعطال والصور</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navTabBtn} onPress={() => setActiveTab('inspection')}>
-          <Ionicons name="shield-checkmark-outline" size={22} color={activeTab === 'inspection' ? '#38BDF8' : '#94A3B8'} />
-          <Text style={[styles.navTabTxt, activeTab === 'inspection' && styles.navTabTxtActive]}>التفتيش</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navTabBtn} onPress={() => setActiveTab('checklist')}>
-          <Ionicons name="checkbox-outline" size={22} color={activeTab === 'checklist' ? '#38BDF8' : '#94A3B8'} />
-          <Text style={[styles.navTabTxt, activeTab === 'checklist' && styles.navTabTxtActive]}>الفحص اليومي</Text>
+        <TouchableOpacity style={styles.navTabBtn} onPress={() => setActiveTab('patrol')}>
+          <Ionicons name="shield-checkmark-outline" size={22} color={activeTab === 'patrol' ? '#38BDF8' : '#94A3B8'} />
+          <Text style={[styles.navTabTxt, activeTab === 'patrol' && styles.navTabTxtActive]}>التفتيش</Text>
         </TouchableOpacity>
       </View>
 
-      {/* نافذة خيارات الغرفة (أزرار كبيرة تناسب الجميع) */}
+      {/* نافذة خيارات الغرفة عند النقر عليها من المخطط */}
       <Modal visible={drawerVisible} transparent={true} animationType="slide">
         <View style={styles.modalBackdrop}>
           <View style={styles.drawerCard}>
@@ -593,25 +562,8 @@ export default function App() {
                 setReportModalVisible(true);
               }}
             >
-              <Ionicons name="warning-outline" size={24} color="#FFF" />
-              <Text style={styles.btnActionLargeTxt}>🚨 تسجيل بلاغ عطل فوري</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.btnActionLarge, { backgroundColor: '#25D366', marginTop: 10 }]}
-              onPress={() => {
-                setDrawerVisible(false);
-                sendWhatsAppTicket({
-                  id: 'مباشر',
-                  location: currentRoom?.name,
-                  problem: 'طلب فحص ومعاينة فورية',
-                  priority: 'عاجل',
-                  status: 'new',
-                });
-              }}
-            >
-              <Ionicons name="logo-whatsapp" size={24} color="#FFF" />
-              <Text style={styles.btnActionLargeTxt}>إرسال بلاغ واتساب مباشر</Text>
+              <Ionicons name="create-outline" size={22} color="#FFF" />
+              <Text style={styles.btnActionLargeTxt}>📝 كتابة تفسير وتوثيق عطل بالصورة</Text>
             </TouchableOpacity>
 
             <View style={{ flexDirection: 'row-reverse', gap: 10, marginTop: 10 }}>
@@ -623,67 +575,110 @@ export default function App() {
                   setRenameModalVisible(true);
                 }}
               >
-                <Ionicons name="create-outline" size={20} color="#FFF" />
+                <Ionicons name="create-outline" size={18} color="#FFF" />
                 <Text style={styles.btnActionLargeTxt}>تعديل الاسم ✏️</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.btnActionLarge, { backgroundColor: '#334155', flex: 1 }]}
-                onPress={() => Alert.alert('كاميرا المرفق 📷', `فتح الكاميرا لتوثيق حالة (${currentRoom?.name})`)}
+                style={[styles.btnActionLarge, { backgroundColor: '#25D366', flex: 1 }]}
+                onPress={() => {
+                  sendWhatsAppWithDetails({
+                    location: currentRoom?.name,
+                    category: 'معاينة فورية',
+                    priority: 'عاجل',
+                    description: 'طلب حضور لمعاينة الموقع',
+                    status: 'new',
+                    hasPhoto: false,
+                  });
+                }}
               >
-                <Ionicons name="camera-outline" size={20} color="#FFF" />
-                <Text style={styles.btnActionLargeTxt}>صورة 📷</Text>
+                <Ionicons name="logo-whatsapp" size={18} color="#FFF" />
+                <Text style={styles.btnActionLargeTxt}>واتساب</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
 
-      {/* نافذة التبليغ السريعة (قائمة أزرار جاهزة + تسجيل صوتي) */}
+      {/* نافذة التوصيف والتفسير اليدوي وإرفاق صورة العطل */}
       <Modal visible={reportModalVisible} transparent={true} animationType="slide">
         <View style={styles.modalBackdrop}>
           <View style={styles.reportModalCard}>
-            <Text style={styles.drawerTitle}>تسجيل عطل في: {currentRoom?.name}</Text>
-            <Text style={{ color: '#94A3B8', fontSize: 12, textAlign: 'right', marginTop: 4, marginBottom: 12 }}>
-              اختر المشكلة بلمسة واحدة بدون كتابة 👇
-            </Text>
+            <View style={styles.drawerHeader}>
+              <Text style={styles.drawerTitle}>تفسير وتوثيق العطل: {currentRoom?.name}</Text>
+              <TouchableOpacity onPress={() => setReportModalVisible(false)}>
+                <Ionicons name="close-circle" size={26} color="#94A3B8" />
+              </TouchableOpacity>
+            </View>
 
-            <ScrollView style={{ maxHeight: 240 }}>
-              {EASY_FAULT_PRESETS.map((p) => {
-                const isSelected = selectedPreset.id === p.id;
-                return (
-                  <TouchableOpacity
-                    key={p.id}
-                    style={[styles.presetItemBtn, isSelected && { backgroundColor: p.color, borderColor: p.color }]}
-                    onPress={() => setSelectedPreset(p)}
-                  >
-                    <Text style={[styles.presetItemTxt, isSelected && { color: '#FFF' }]}>{p.title}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+            {/* تصنيف العطل بنقرة سريعة */}
+            <Text style={styles.inputLabel}>تصنيف العطل:</Text>
+            <View style={styles.categoryRow}>
+              {['سباكة', 'تكييف', 'كهرباء', 'أثاث', 'أبواب', 'سلامة'].map((cat) => (
+                <TouchableOpacity
+                  key={cat}
+                  style={[styles.categoryChip, selectedCategory === cat && styles.categoryChipActive]}
+                  onPress={() => setSelectedCategory(cat)}
+                >
+                  <Text style={[styles.categoryChipTxt, selectedCategory === cat && { color: '#FFF' }]}>{cat}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
-            {/* تسجيل صوتي بلمسة واحدة */}
-            <TouchableOpacity
-              style={[styles.btnVoice, isRecording && { backgroundColor: '#EF4444' }]}
-              onPress={() => {
-                if (isRecording) {
-                  setIsRecording(false);
-                  setHasVoiceNote(true);
-                  Alert.alert('تم الحفظ 🎤', 'تم تسجيل صوتك وإرفاقه بالبلاغ بنجاح.');
-                } else {
-                  setIsRecording(true);
-                }
-              }}
-            >
-              <Ionicons name={isRecording ? 'stop-circle' : 'mic'} size={22} color="#FFF" />
-              <Text style={styles.btnVoiceTxt}>
-                {isRecording ? 'جاري التسجيل.. انقر للحفظ ⏹️' : hasVoiceNote ? '✅ تم إرفاق تسجيلك الصوتي' : 'اضغط للتحدث وشرح المشكلة بصوتك 🎤'}
+            {/* حقل الكتابة والتفسير اليدوي المفصل */}
+            <Text style={styles.inputLabel}>اكتب تفسير وتوصيف المشكلة بيدك بالتفصيل ✍️:</Text>
+            <TextInput
+              style={styles.textArea}
+              placeholder="اكتب هنا ما هي المشكلة بالضبط، أسبابها الظاهرة، أو أي ملاحظات للمصلح..."
+              placeholderTextColor="#94A3B8"
+              multiline={true}
+              numberOfLines={4}
+              value={manualDescription}
+              onChangeText={setManualDescription}
+            />
+
+            {/* قسم التقاط وإرفاق صورة حالة العطل */}
+            <Text style={styles.inputLabel}>توثيق حالة العطل بصورة حية 📸:</Text>
+            <TouchableOpacity style={styles.btnAttachPhoto} onPress={handleAttachPhoto}>
+              <Ionicons name={attachedPhoto ? 'checkmark-circle' : 'camera'} size={22} color="#FFF" />
+              <Text style={styles.btnAttachPhotoTxt}>
+                {attachedPhoto ? '✅ تم إرفاق صورة العطل (انقر للتغيير)' : 'التقاط أو إرفاق صورة لحالة العطل 📷'}
               </Text>
             </TouchableOpacity>
 
+            {/* معاينة الصورة المختارة */}
+            {attachedPhoto && (
+              <View style={styles.previewBox}>
+                <Image source={{ uri: attachedPhoto }} style={styles.previewImage} />
+                <Text style={{ color: '#10B981', fontSize: 11, fontWeight: 'bold' }}>جاهزة للإرسال مع البلاغ</Text>
+              </View>
+            )}
+
+            {/* مستوى الأولوية */}
+            <View style={styles.priorityRow}>
+              {[
+                { val: 'طوارئ', color: '#EF4444' },
+                { val: 'عاجل', color: '#F59E0B' },
+                { val: 'عادي', color: '#10B981' },
+              ].map((pr) => (
+                <TouchableOpacity
+                  key={pr.val}
+                  style={[
+                    styles.priorityBtn,
+                    selectedPriority === pr.val && { backgroundColor: pr.color, borderColor: pr.color },
+                  ]}
+                  onPress={() => setSelectedPriority(pr.val)}
+                >
+                  <Text style={[styles.priorityBtnTxt, selectedPriority === pr.val && { color: '#FFF' }]}>
+                    {pr.val}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* أزرار الحفظ والإلغاء */}
             <View style={{ flexDirection: 'row-reverse', gap: 10, marginTop: 14 }}>
-              <TouchableOpacity style={[styles.btnActionLarge, { backgroundColor: '#10B981', flex: 1.5 }]} onPress={handleCreateReport}>
-                <Text style={styles.btnActionLargeTxt}>تأكيد وإرسال البلاغ 🚀</Text>
+              <TouchableOpacity style={[styles.btnActionLarge, { backgroundColor: '#10B981', flex: 1.5 }]} onPress={handleSaveFaultReport}>
+                <Text style={styles.btnActionLargeTxt}>اعتماد وحفظ البلاغ والصورة 🚀</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.btnActionLarge, { backgroundColor: '#475569', flex: 1 }]} onPress={() => setReportModalVisible(false)}>
                 <Text style={styles.btnActionLargeTxt}>إلغاء</Text>
@@ -693,7 +688,19 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* نافذة إعادة التسمية الميدانية */}
+      {/* نافذة معاينة الصورة بالحجم الكبير */}
+      <Modal visible={previewPhotoModal} transparent={true} animationType="fade">
+        <View style={styles.photoPreviewBackdrop}>
+          <TouchableOpacity style={styles.btnClosePreview} onPress={() => setPreviewPhotoModal(false)}>
+            <Ionicons name="close-circle" size={36} color="#FFF" />
+          </TouchableOpacity>
+          {activePreviewImage && (
+            <Image source={{ uri: activePreviewImage }} style={styles.fullPreviewImage} resizeMode="contain" />
+          )}
+        </View>
+      </Modal>
+
+      {/* نافذة تعديل التسمية */}
       <Modal visible={renameModalVisible} transparent={true} animationType="fade">
         <View style={styles.modalBackdrop}>
           <View style={styles.renameBox}>
@@ -705,7 +712,7 @@ export default function App() {
               style={styles.renameInput}
               value={editedName}
               onChangeText={setEditedName}
-              placeholder="اكتب الاسم الجديد للقاعة هنا..."
+              placeholder="اكتب الاسم الجديد هنا..."
               placeholderTextColor="#94A3B8"
             />
             <View style={{ flexDirection: 'row-reverse', gap: 10, marginTop: 14 }}>
@@ -750,21 +757,29 @@ const styles = StyleSheet.create({
   alertBadge: { position: 'absolute', top: -4, right: -4, backgroundColor: '#EF4444', borderRadius: 10, minWidth: 16, height: 16, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#FFF' },
   alertBadgeText: { color: '#FFF', fontSize: 9, fontWeight: 'bold' },
 
-  statsRow: { flexDirection: 'row-reverse', gap: 8, marginBottom: 16 },
-  statBox: { flex: 1, backgroundColor: '#1E293B', padding: 12, borderRadius: 10, alignItems: 'center', borderWidth: 1.5 },
-  statNumber: { fontSize: 22, fontWeight: 'bold' },
-  statLabel: { color: '#F8FAFC', fontSize: 11, marginTop: 4, fontWeight: 'bold' },
+  sectionHeaderRow: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  sectionHeaderTxt: { color: '#FFFFFF', fontSize: 14, fontWeight: 'bold', textAlign: 'right' },
+  btnExportPdf: { flexDirection: 'row-reverse', alignItems: 'center', gap: 4, backgroundColor: '#0284C7', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6 },
+  btnExportPdfTxt: { color: '#FFF', fontSize: 11, fontWeight: 'bold' },
 
-  sectionHeaderTxt: { color: '#FFFFFF', fontSize: 14, fontWeight: 'bold', textAlign: 'right', marginBottom: 12 },
-  faultCard: { backgroundColor: '#1E293B', borderRadius: 12, padding: 14, marginBottom: 10, borderWidth: 1.5, borderColor: '#334155' },
-  faultCardTop: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center' },
-  faultLocation: { color: '#F8FAFC', fontWeight: 'bold', fontSize: 14 },
-  badgeTag: { color: '#FFF', fontSize: 10, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, fontWeight: 'bold' },
-  faultIssueTxt: { color: '#38BDF8', fontSize: 14, fontWeight: 'bold', textAlign: 'right', marginVertical: 6 },
-  faultMetaTxt: { color: '#94A3B8', fontSize: 11, textAlign: 'right', marginBottom: 8 },
-  voiceIndicator: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginBottom: 10 },
+  detailedFaultCard: { backgroundColor: '#1E293B', borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1.5, borderColor: '#334155' },
+  detailedCardHeader: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  detailedLocation: { color: '#F8FAFC', fontWeight: 'bold', fontSize: 14 },
+  categoryBadge: { color: '#38BDF8', backgroundColor: '#0B132B', fontSize: 11, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, fontWeight: 'bold' },
+  priorityBadge: { color: '#FFF', fontSize: 10, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, fontWeight: 'bold' },
 
-  cardActionsRow: { flexDirection: 'row-reverse', gap: 8, alignItems: 'center' },
+  descriptionBox: { backgroundColor: '#0B132B', padding: 10, borderRadius: 8, borderWidth: 1, borderColor: '#334155', marginBottom: 10 },
+  descriptionLabel: { color: '#38BDF8', fontSize: 11, fontWeight: 'bold', textAlign: 'right', marginBottom: 4 },
+  descriptionText: { color: '#F8FAFC', fontSize: 13, lineHeight: 20, textAlign: 'right' },
+
+  photoContainer: { backgroundColor: '#0B132B', padding: 8, borderRadius: 8, marginBottom: 10, alignItems: 'center' },
+  photoLabel: { color: '#F59E0B', fontSize: 11, fontWeight: 'bold', marginBottom: 6 },
+  faultThumbnail: { width: '100%', height: 140, borderRadius: 6 },
+  photoClickHint: { color: '#94A3B8', fontSize: 10, marginTop: 4 },
+
+  timeMeta: { color: '#94A3B8', fontSize: 10, textAlign: 'right', marginBottom: 10 },
+
+  actionsRow: { flexDirection: 'row-reverse', gap: 8, alignItems: 'center' },
   btnCycleStatus: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
   btnCycleStatusTxt: { color: '#FFF', fontWeight: 'bold', fontSize: 12 },
   btnWhatsApp: { backgroundColor: '#25D366', padding: 12, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
@@ -772,14 +787,6 @@ const styles = StyleSheet.create({
   bigScanCard: { backgroundColor: '#0284C7', borderRadius: 16, padding: 24, alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 10 },
   bigScanTitle: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
   bigScanSub: { color: '#E0F2FE', fontSize: 11 },
-  pdfExportBtn: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#1E293B', borderWidth: 1, borderColor: '#38BDF8', padding: 14, borderRadius: 10, marginTop: 14 },
-  pdfExportBtnTxt: { color: '#38BDF8', fontWeight: 'bold', fontSize: 13 },
-
-  checklistCard: { flexDirection: 'row-reverse', alignItems: 'center', gap: 12, backgroundColor: '#1E293B', padding: 16, borderRadius: 10, marginBottom: 10, borderWidth: 1, borderColor: '#334155' },
-  checklistCardChecked: { borderColor: '#10B981', backgroundColor: '#132A38' },
-  checklistCardTxt: { color: '#CBD5E1', fontSize: 13, fontWeight: 'bold', flex: 1, textAlign: 'right' },
-  btnSaveChecklist: { backgroundColor: '#10B981', paddingVertical: 14, borderRadius: 10, alignItems: 'center', marginTop: 14 },
-  btnSaveChecklistTxt: { color: '#FFF', fontWeight: 'bold', fontSize: 14 },
 
   bottomNav: { flexDirection: 'row', height: 56, backgroundColor: '#1E293B', borderTopWidth: 1, borderColor: '#334155', justifyContent: 'space-around', alignItems: 'center' },
   navTabBtn: { alignItems: 'center', justifyContent: 'center' },
@@ -788,18 +795,33 @@ const styles = StyleSheet.create({
 
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
   drawerCard: { backgroundColor: '#1E293B', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 18, borderTopWidth: 2, borderColor: '#38BDF8' },
-  reportModalCard: { backgroundColor: '#1E293B', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 18, borderTopWidth: 2, borderColor: '#EF4444' },
-  drawerHeader: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  drawerTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+  reportModalCard: { backgroundColor: '#1E293B', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 18, borderTopWidth: 2, borderColor: '#EF4444', maxHeight: '90%' },
+  drawerHeader: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  drawerTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: 'bold' },
 
   btnActionLarge: { paddingVertical: 12, borderRadius: 10, alignItems: 'center', flexDirection: 'row-reverse', justifyContent: 'center', gap: 8 },
   btnActionLargeTxt: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 12 },
 
-  presetItemBtn: { backgroundColor: '#0F172A', paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8, marginBottom: 6, borderWidth: 1, borderColor: '#334155', alignItems: 'flex-end' },
-  presetItemTxt: { color: '#CBD5E1', fontSize: 12, fontWeight: 'bold' },
+  inputLabel: { color: '#F8FAFC', fontSize: 12, fontWeight: 'bold', textAlign: 'right', marginTop: 8, marginBottom: 6 },
+  categoryRow: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
+  categoryChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#0B132B', borderWidth: 1, borderColor: '#334155' },
+  categoryChipActive: { backgroundColor: '#0284C7', borderColor: '#38BDF8' },
+  categoryChipTxt: { color: '#94A3B8', fontSize: 11, fontWeight: 'bold' },
 
-  btnVoice: { backgroundColor: '#334155', paddingVertical: 12, borderRadius: 8, flexDirection: 'row-reverse', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 10 },
-  btnVoiceTxt: { color: '#FFF', fontSize: 11, fontWeight: 'bold' },
+  textArea: { backgroundColor: '#0B132B', color: '#FFFFFF', borderRadius: 8, padding: 10, textAlign: 'right', borderWidth: 1, borderColor: '#334155', minHeight: 90, textAlignVertical: 'top', fontSize: 13 },
+
+  btnAttachPhoto: { backgroundColor: '#0284C7', paddingVertical: 12, borderRadius: 8, flexDirection: 'row-reverse', justifyContent: 'center', alignItems: 'center', gap: 8, marginVertical: 6 },
+  btnAttachPhotoTxt: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },
+  previewBox: { flexDirection: 'row-reverse', alignItems: 'center', gap: 10, backgroundColor: '#0B132B', padding: 8, borderRadius: 8, marginBottom: 8 },
+  previewImage: { width: 50, height: 50, borderRadius: 6 },
+
+  priorityRow: { flexDirection: 'row-reverse', gap: 8, marginVertical: 6 },
+  priorityBtn: { flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: '#0B132B', borderWidth: 1, borderColor: '#334155', alignItems: 'center' },
+  priorityBtnTxt: { color: '#94A3B8', fontSize: 11, fontWeight: 'bold' },
+
+  photoPreviewBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', justifyContent: 'center', alignItems: 'center' },
+  btnClosePreview: { position: 'absolute', top: 40, right: 20, zIndex: 10 },
+  fullPreviewImage: { width: '92%', height: '75%', borderRadius: 10 },
 
   renameBox: { backgroundColor: '#1E293B', margin: 20, borderRadius: 14, padding: 16, borderWidth: 1.5, borderColor: '#38BDF8', alignSelf: 'center', width: '90%' },
   renameInput: { backgroundColor: '#0F172A', color: '#FFFFFF', borderRadius: 8, padding: 10, textAlign: 'right', borderWidth: 1, borderColor: '#334155' },
