@@ -1,13 +1,16 @@
 {
-  "name": "zayed-complex-backend",
+  "name": "zayed-complex-app",
   "version": "1.0.0",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "expo start",
+    "android": "expo start --android"
   },
   "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.19.2",
-    "multer": "^1.4.5-lts.1"
-  }
+    "expo": "~51.0.0",
+    "react": "18.2.0",
+    "react-native": "0.74.5",
+    "@expo/vector-icons": "^14.0.0"
+  },
+  "private": true
 }
