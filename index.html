@@ -1,1135 +1,802 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="مجمع زايد" />
-<meta name="mobile-web-app-capable" content="yes" />
-<meta name="theme-color" content="#0f172a" />
-<title>نظام البلاغات والصيانة - مجمع زايد</title>
-​<!-- Tailwind CSS -->
-<script src="https://cdn.tailwindcss.com"></script>
-<!-- FontAwesome Icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-<!-- Tajawal Arabic Font -->
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
-​<style>
-* {
-font-family: 'Tajawal', sans-serif;
--webkit-tap-highlight-color: transparent;
-box-sizing: border-box;
-}
-body {
-background-color: #f1f5f9;
-color: #0f172a;
-overscroll-behavior-y: none;
-padding-bottom: env(safe-area-inset-bottom);
-}
-/* Custom Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #f1f5f9; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-​.safe-top { padding-top: max(0.75rem, env(safe-area-inset-top)); }
-.safe-bottom { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
-​@keyframes pulse-soft {
-0%, 100% { opacity: 1; }
-50% { opacity: 0.6; }
-}
-.animate-pulse-soft { animation: pulse-soft 2s infinite; }
-​@media print {
-.no-print { display: none !important; }
-.print-only { display: block !important; }
-body { background: white; }
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>منظومة مجمع زايد التعليمي - إدارة الصيانة والمرافق</title>
+  
+  <!-- خط تجوال ومكتبة الأيقونات وقالب التنسيق -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <style>
+    body {
+      font-family: 'Tajawal', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .nav-btn.active {
+      color: #0284c7;
+      border-top: 3px solid #0284c7;
+      background-color: #f0f9ff;
+    }
+    /* تحسين التمرير في المخطط */
+    .blueprint-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+    }
+  </style>
 </head>
-<body class="min-h-screen flex flex-col">
-​<!-- ================= HEADER (الشريط العلوي) ================= -->
-<header class="bg-slate-900 text-white sticky top-0 z-40 shadow-lg safe-top no-print">
-<div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
-<div class="flex items-center gap-3">
-<div class="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white font-bold text-lg shadow-md">
-<i class="fa-solid fa-building-shield"></i>
-</div>
-<div>
-<h1 class="font-extrabold text-base sm:text-lg leading-tight">نظام بلاغات مجمع زايد</h1>
-<div class="flex items-center gap-2 text-xs text-slate-300 mt-0.5">
-<span id="syncStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
-<span id="syncStatusText">متصل وجاهز للمزامنة</span>
-<span id="pendingSyncBadge" class="hidden bg-amber-500/20 text-amber-300 border border-amber-400/30 px-1.5 py-0.2 rounded text-[10px]">
-0 قيد الرفع
-</span>
-</div>
-</div>
-</div>
-​<div class="flex items-center gap-2">
-<!-- Current User Button -->
-<button onclick="openUserModal()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-xl flex items-center gap-2 text-xs sm:text-sm transition">
-<i class="fa-solid fa-user-check text-emerald-400"></i>
-<span id="currentUserNameDisplay" class="font-bold max-w-[90px] sm:max-w-[140px] truncate">المستخدم</span>
-</button>
-​<!-- Manual Sync Button -->
-<button onclick="syncNow(true)" id="btnManualSync" title="مزامنة الآن" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 w-9 h-9 rounded-xl flex items-center justify-center text-slate-200 transition">
-<i id="syncIcon" class="fa-solid fa-arrows-rotate"></i>
-</button>
-​<!-- Server Settings Button -->
-<button onclick="openSettingsModal()" title="إعدادات الربط والمزامنة" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 w-9 h-9 rounded-xl flex items-center justify-center text-slate-200 transition">
-<i class="fa-solid fa-gear"></i>
-</button>
-</div>
-</div>
-</header>
-​<!-- ================= MAIN CONTENT ================= -->
-<main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-4 py-4 pb-24">
-​<!-- Stats Row (إحصائيات سريعة) -->
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 mb-5 no-print">
-<div onclick="setQuickFilter('all')" class="cursor-pointer bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200/80 flex items-center justify-between hover:border-slate-400 transition">
-<div>
-<p class="text-xs text-slate-500 font-medium">إجمالي البلاغات</p>
-<p id="statTotal" class="text-2xl font-extrabold text-slate-800 mt-0.5">0</p>
-</div>
-<div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-lg">
-<i class="fa-solid fa-clipboard-list"></i>
-</div>
-</div>
-​<div onclick="setQuickFilter('new')" class="cursor-pointer bg-white p-3.5 rounded-2xl shadow-sm border border-red-200/80 flex items-center justify-between hover:border-red-400 transition">
-<div>
-<p class="text-xs text-red-600 font-medium">بلاغات جديدة / طارئة</p>
-<p id="statNew" class="text-2xl font-extrabold text-red-600 mt-0.5">0</p>
-</div>
-<div class="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center text-lg">
-<i class="fa-solid fa-triangle-exclamation"></i>
-</div>
-</div>
-​<div onclick="setQuickFilter('in_progress')" class="cursor-pointer bg-white p-3.5 rounded-2xl shadow-sm border border-amber-200/80 flex items-center justify-between hover:border-amber-400 transition">
-<div>
-<p class="text-xs text-amber-600 font-medium">قيد المعالجة</p>
-<p id="statProgress" class="text-2xl font-extrabold text-amber-600 mt-0.5">0</p>
-</div>
-<div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg">
-<i class="fa-solid fa-screwdriver-wrench"></i>
-</div>
-</div>
-​<div onclick="setQuickFilter('resolved')" class="cursor-pointer bg-white p-3.5 rounded-2xl shadow-sm border border-emerald-200/80 flex items-center justify-between hover:border-emerald-400 transition">
-<div>
-<p class="text-xs text-emerald-600 font-medium">تم الإنجاز</p>
-<p id="statResolved" class="text-2xl font-extrabold text-emerald-600 mt-0.5">0</p>
-</div>
-<div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
-<i class="fa-solid fa-circle-check"></i>
-</div>
-</div>
-</div>
-​<!-- Search & Filters Bar (شريط البحث والفلترة) -->
-<div class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200/80 mb-5 no-print">
-<div class="flex flex-col sm:flex-row gap-2.5">
-<div class="relative flex-1">
-<i class="fa-solid fa-magnifying-glass absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-<input
-type="text"
-id="searchInput"
-oninput="renderIssues()"
-placeholder="ابحث برقم البلاغ، المبنى، الغرفة، الوصف، أو اسم المسجل..."
-class="w-full pr-10 pl-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 focus:bg-white transition"
-/>
-</div>
-​<div class="grid grid-cols-3 sm:flex gap-2">
-<select id="filterBuilding" onchange="renderIssues()" class="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs sm:text-sm font-medium text-slate-700 focus:outline-none focus:border-emerald-500">
-<option value="all">كل المباني</option>
-</select>
-​<select id="filterCategory" onchange="renderIssues()" class="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs sm:text-sm font-medium text-slate-700 focus:outline-none focus:border-emerald-500">
-<option value="all">كل التصنيفات</option>
-<option value="كهرباء">كهرباء</option>
-<option value="تكييف وتبريد">تكييف وتبريد</option>
-<option value="سباكة ومياه">سباكة ومياه</option>
-<option value="مدني وإنشائي">مدني وإنشائي</option>
-<option value="نجارة وأبواب">نجارة وأبواب</option>
-<option value="شبكات وتقنية">شبكات وتقنية</option>
-<option value="نظافة وسلامة">نظافة وسلامة</option>
-<option value="أخرى">أخرى</option>
-</select>
-​<select id="filterStatus" onchange="renderIssues()" class="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs sm:text-sm font-medium text-slate-700 focus:outline-none focus:border-emerald-500">
-<option value="all">كل الحالات</option>
-<option value="new">جديد</option>
-<option value="in_progress">قيد المعالجة</option>
-<option value="waiting_parts">بانتظار قطع غيار</option>
-<option value="resolved">تم الإنجاز</option>
-</select>
-</div>
-</div>
-​<!-- Action Toolbar -->
-<div class="flex flex-wrap items-center justify-between gap-2 mt-3 pt-3 border-t border-slate-100 text-xs">
-<div class="flex items-center gap-2 text-slate-500">
-<span id="resultsCountText">عرض 0 بلاغ</span>
-</div>
-<div class="flex items-center gap-2">
-<button onclick="exportCSV()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium flex items-center gap-1.5 transition">
-<i class="fa-solid fa-file-excel text-emerald-600"></i>
-<span>تصدير Excel</span>
-</button>
-<button onclick="window.print()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium flex items-center gap-1.5 transition">
-<i class="fa-solid fa-print text-blue-600"></i>
-<span>طباعة تقرير</span>
-</button>
-</div>
-</div>
-</div>
-​<!-- Issues List Grid (قائمة البلاغات) -->
-<div id="issuesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-<!-- Populated dynamically via JS -->
-</div>
-​<!-- Empty State -->
-<div id="emptyState" class="hidden bg-white rounded-3xl p-10 text-center border border-dashed border-slate-300 my-6">
-<div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto text-2xl mb-3">
-<i class="fa-solid fa-folder-open"></i>
-</div>
-<h3 class="font-bold text-slate-700 text-base">لا توجد بلاغات مطابقة</h3>
-<p class="text-xs text-slate-500 mt-1 mb-4">اضغط على زر "تسجيل بلاغ جديد" لإضافة مشكلة مع الصور فوراً.</p>
-<button onclick="openIssueModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-md transition">
-<i class="fa-solid fa-plus ml-1"></i> تسجيل بلاغ جديد
-</button>
-</div>
-​</main>
-​<!-- ================= FLOATING ACTION BUTTON (زر إضافة بلاغ سريع للجوال) ================= -->
-<div class="fixed bottom-5 left-0 right-0 z-30 pointer-events-none flex justify-center px-4 safe-bottom no-print">
-<button
-onclick="openIssueModal()"
-class="pointer-events-auto bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold px-6 py-3.5 rounded-2xl shadow-xl shadow-emerald-900/30 flex items-center gap-2.5 text-sm sm:text-base transition transform"
->
-<i class="fa-solid fa-camera-retro text-lg"></i>
-<span>تسجيل بلاغ / مشكلة جديدة</span>
-</button>
-</div>
-​<!-- ================= MODAL: ADD / EDIT ISSUE (نافذة تسجيل وتعديل البلاغ) ================= -->
-<div id="issueModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 hidden items-end sm:items-center justify-center p-0 sm:p-4 no-print">
-<div class="bg-white w-full sm:max-w-xl rounded-t-3xl sm:rounded-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-fadeIn">
-<!-- Modal Header -->
-<div class="px-5 py-4 bg-slate-900 text-white flex items-center justify-between">
-<h2 id="modalTitle" class="font-extrabold text-base sm:text-lg flex items-center gap-2">
-<i class="fa-solid fa-circle-plus text-emerald-400"></i>
-<span>تسجيل بلاغ جديد</span>
-</h2>
-<button onclick="closeIssueModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center">
-<i class="fa-solid fa-xmark"></i>
-</button>
-</div>
-​<!-- Modal Form Body -->
-<form id="issueForm" onsubmit="saveIssue(event)" class="p-5 overflow-y-auto space-y-4 flex-1">
-<input type="hidden" id="issueId" />
-​<!-- Building & Exact Location -->
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-<div>
-<label class="block text-xs font-bold text-slate-700 mb-1">المبنى / القسم <span class="text-red-500">*</span></label>
-<div class="flex gap-1.5">
-<select id="issueBuilding" required class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500"></select>
-<button type="button" onclick="promptNewBuilding()" title="إضافة مبنى جديد" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 rounded-xl border border-slate-300 text-sm">
-<i class="fa-solid fa-plus"></i>
-</button>
-</div>
-</div>
-​<div>
-<label class="block text-xs font-bold text-slate-700 mb-1">الطابق / الغرفة / الموقع الدقيق <span class="text-red-500">*</span></label>
-<input
-type="text"
-id="issueLocation"
-required
-placeholder="مثال: الطابق الأول - قاعة 104"
-class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500"
-/>
-</div>
-</div>
-​<!-- Category & Priority -->
-<div class="grid grid-cols-2 gap-3">
-<div>
-<label class="block text-xs font-bold text-slate-700 mb-1">نوع العطل / التصنيف <span class="text-red-500">*</span></label>
-<select id="issueCategory" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500">
-<option value="كهرباء">⚡ كهرباء وإضاءة</option>
-<option value="تكييف وتبريد">❄️ تكييف وتبريد</option>
-<option value="سباكة ومياه">🚰 سباكة ومياه</option>
-<option value="مدني وإنشائي">🧱 مدني وإنشائي</option>
-<option value="نجارة وأبواب">🚪 نجارة وأبواب وأقفال</option>
-<option value="شبكات وتقنية">🌐 شبكات وتقنية</option>
-<option value="نظافة وسلامة">🧯 نظافة وأمن وسلامة</option>
-<option value="أخرى">📌 أخرى</option>
-</select>
-</div>
-​<div>
-<label class="block text-xs font-bold text-slate-700 mb-1">درجة الأولوية <span class="text-red-500">*</span></label>
-<select id="issuePriority" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500">
-<option value="normal">🟢 عادي</option>
-<option value="medium" selected>🟡 متوسط</option>
-<option value="high">🟠 عالي الأهمية</option>
-<option value="urgent">🔴 طارئ جداً (فوري)</option>
-</select>
-</div>
-</div>
-​<!-- Issue Status (Visible when editing or creating) -->
-<div>
-<label class="block text-xs font-bold text-slate-700 mb-1">حالة البلاغ</label>
-<select id="issueStatus" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-bold focus:outline-none focus:border-emerald-500">
-<option value="new">🆕 جديد (بانتظار المعالجة)</option>
-<option value="in_progress">🔧 قيد المعالجة والإصلاح</option>
-<option value="waiting_parts">📦 بانتظار قطع غيار / توريد</option>
-<option value="resolved">✅ تم الإنجاز والإغلاق</option>
-</select>
-</div>
-​<!-- Description -->
-<div>
-<label class="block text-xs font-bold text-slate-700 mb-1">وصف المشكلة بالتفصيل <span class="text-red-500">*</span></label>
-<textarea
-id="issueDescription"
-required
-rows="3"
-placeholder="اكتب تفاصيل المشكلة أو الملاحظات الفنية هنا..."
-class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-sm focus:outline-none focus:border-emerald-500"
-></textarea>
-</div>
-​<!-- PHOTO UPLOAD SECTION (مع ضغط ذكي تلقائي للآيفون والأندرويد) -->
-<div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
-<div class="flex items-center justify-between mb-2">
-<label class="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
-<i class="fa-solid fa-images text-emerald-600"></i>
-<span>صور المشكلة / الإصلاح (تُضغط تلقائياً لسرعة الرفع)</span>
-</label>
-<span id="photoCounter" class="text-[11px] text-slate-500 font-medium">0 صور</span>
-</div>
-​<div class="grid grid-cols-2 gap-2.5 mb-3">
-<!-- Direct Camera Capture (iPhone & Android) -->
-<label class="cursor-pointer bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition">
-<i class="fa-solid fa-camera text-base"></i>
-<span>التقاط بالكاميرا</span>
-<input type="file" accept="image/*" capture="environment" onchange="handleImageSelect(event)" class="hidden" />
-</label>
-​<!-- Gallery Multi-Select -->
-<label class="cursor-pointer bg-slate-800 hover:bg-slate-900 active:scale-95 text-white py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition">
-<i class="fa-solid fa-photo-film text-base"></i>
-<span>اختيار من الاستوديو</span>
-<input type="file" accept="image/*" multiple onchange="handleImageSelect(event)" class="hidden" />
-</label>
-</div>
-​<!-- Compression Progress Indicator -->
-<div id="imageProcessingIndicator" class="hidden text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-2 mb-2 flex items-center gap-2">
-<i class="fa-solid fa-spinner fa-spin"></i>
-<span>جاري ضغط وتحسين الصور لتناسب سرعة الإنترنت...</span>
-</div>
-​<!-- Previews Grid -->
-<div id="photoPreviewContainer" class="grid grid-cols-3 sm:grid-cols-4 gap-2"></div>
-</div>
-​<!-- Technical Notes / Resolution Notes -->
-<div>
-<label class="block text-xs font-bold text-slate-700 mb-1">ملاحظات الفني / الإجراء المتخذ (اختياري)</label>
-<input
-type="text"
-id="issueTechNotes"
-placeholder="مثال: تم تغيير القاطع الكهربائي وفحص التوصيلات"
-class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
-/>
-</div>
-​<!-- Submit Footer -->
-<div class="pt-2 flex gap-2.5">
-<button
-type="submit"
-id="btnSubmitIssue"
-class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3 rounded-xl shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 text-sm transition"
->
-<i class="fa-solid fa-cloud-arrow-up"></i>
-<span>حفظ ومزامنة البلاغ</span>
-</button>
-<button
-type="button"
-onclick="closeIssueModal()"
-class="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition"
->
-إلغاء
-</button>
-</div>
-</form>
-</div>
-</div>
-​<!-- ================= MODAL: IMAGE LIGHTBOX (تكبير الصور ومعاينتها) ================= -->
-<div id="lightboxModal" onclick="closeLightbox()" class="fixed inset-0 bg-black/90 z-50 hidden items-center justify-center p-4 no-print">
-<button onclick="closeLightbox()" class="absolute top-6 left-6 w-10 h-10 rounded-full bg-white/20 text-white text-xl flex items-center justify-center">
-<i class="fa-solid fa-xmark"></i>
-</button>
-<img id="lightboxImage" src="" alt="معاينة الصورة" class="max-w-full max-h-[88vh] rounded-xl object-contain shadow-2xl" />
-</div>
-​<!-- ================= MODAL: USER PROFILE (تحديد اسم المستخدم المسجل) ================= -->
-<div id="userModal" class="fixed inset-0 bg-slate-900/70 z-50 hidden items-center justify-center p-4 no-print">
-<div class="bg-white w-full max-w-md rounded-3xl p-5 shadow-2xl">
-<div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-<h3 class="font-extrabold text-slate-800 flex items-center gap-2">
-<i class="fa-solid fa-id-badge text-emerald-600"></i>
-<span>بيانات المستخدم الحالي</span>
-</h3>
-<button onclick="closeUserModal()" class="text-slate-400 hover:text-slate-600">
-<i class="fa-solid fa-xmark text-lg"></i>
-</button>
-</div>
-<p class="text-xs text-slate-500 mb-3">يُرفق اسمك وصفتك تلقائياً مع أي بلاغ أو تحديث تقوم به ليظهر لبقية الفريق.</p>
-<div class="space-y-3">
-<div>
-<label class="block text-xs font-bold text-slate-700 mb-1">الاسم الكامل</label>
-<input type="text" id="inputUserName" placeholder="أدخل اسمك الثلاثي أو الثنائي" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm" />
-</div>
-<div>
-<label class="block text-xs font-bold text-slate-700 mb-1">الصفة / الوظيفة</label>
-<select id="inputUserRole" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm">
-<option value="مشرف صيانة">مشرف صيانة</option>
-<option value="مهندس موقع">مهندس موقع</option>
-<option value="فني مختص">فني مختص</option>
-<option value="إدارة المجمع">إدارة المجمع</option>
-<option value="مسجل بلاغ">مسجل بلاغ</option>
-</select>
-</div>
-<button onclick="saveUserProfile()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl text-sm mt-2">
-حفظ بيانات المستخدم
-</button>
-</div>
-</div>
-</div>
-​<!-- ================= MODAL: SERVER & SYNC SETTINGS (إعدادات السيرفر والمزامنة) ================= -->
-<div id="settingsModal" class="fixed inset-0 bg-slate-900/70 z-50 hidden items-center justify-center p-4 no-print">
-<div class="bg-white w-full max-w-lg rounded-3xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
-<div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-<h3 class="font-extrabold text-slate-800 flex items-center gap-2">
-<i class="fa-solid fa-server text-emerald-600"></i>
-<span>إعدادات المزامنة السحابية وتعدد المستخدمين</span>
-</h3>
-<button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600">
-<i class="fa-solid fa-xmark text-lg"></i>
-</button>
-</div>
-​<div class="space-y-4 text-xs sm:text-sm">
-<div class="bg-emerald-50 border border-emerald-200 text-emerald-900 p-3 rounded-2xl text-xs leading-relaxed">
-<strong>نظام الحماية من فقدان البيانات:</strong> يتم حفظ جميع البلاغات والصور محلياً بقاعدة بيانات المتصفح (IndexedDB) فوراً، وتتم مزامنتها تلقائياً مع السيرفر المشترك ليرى جميع المستخدمين التحديثات في نفس اللحظة.
-</div>
-​<div>
-<label class="block text-xs font-bold text-slate-700 mb-1">رابط السيرفر المشترك (Backend / API / Firebase URL)</label>
-<input
-type="url"
-id="inputApiUrl"
-dir="ltr"
-placeholder="https://your-server-or-firebase.com/issues"
-class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs font-mono"
-/>
-<p class="text-[11px] text-slate-500 mt-1">
-يدعم أي سيرفر Node.js / Express (zayed-backend) أو قاعدة بيانات Firebase Realtime (https://xxx.firebaseio.com/issues.json).
-</p>
-</div>
-​<div>
-<label class="block text-xs font-bold text-slate-700 mb-1">جودة ضغط الصور قبل المزامنة</label>
-<select id="inputImageQuality" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm">
-<option value="0.65">سريعة جداً (حجم صغير جداً - مثالي لضعف الشبكة)</option>
-<option value="0.78" selected>متوازنة وموصى بها (وضوح عالٍ + رفع سريع)</option>
-<option value="0.90">دقة عالية</option>
-</select>
-</div>
-​<!-- Backup / Restore JSON -->
-<div class="pt-3 border-t border-slate-200">
-<p class="font-bold text-xs text-slate-700 mb-2">النسخ الاحتياطي ونقل البيانات:</p>
-<div class="grid grid-cols-2 gap-2">
-<button onclick="downloadBackupJSON()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5">
-<i class="fa-solid fa-download"></i>
-<span>تنزيل نسخة احتياطية</span>
-</button>
-<label class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-800 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5">
-<i class="fa-solid fa-upload"></i>
-<span>استعادة نسخة</span>
-<input type="file" accept=".json" onchange="restoreBackupJSON(event)" class="hidden" />
-</label>
-</div>
-</div>
-​<button onclick="saveSettings()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3 rounded-xl text-sm shadow-md">
-حفظ الإعدادات ومزامنة الآن
-</button>
-</div>
-</div>
-</div>
-​<!-- ================= TOAST NOTIFICATION ================= -->
-<div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 hidden bg-slate-900 text-white px-4 py-2.5 rounded-2xl shadow-xl text-xs sm:text-sm font-bold items-center gap-2 border border-slate-700 no-print">
-<i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
-<span id="toastMessage">تم الحفظ بنجاح</span>
-</div>
-​<!-- ================= JAVASCRIPT ENGINE ================= -->
-<script>
-/********************************************************************
-* 1. الإعدادات الافتراضية وقاعدة البيانات المحلية (IndexedDB)
-* تحل مشكلة امتلاء الذاكرة في الآيفون والأندرويد عند حفظ الصور
-********************************************************************/
-const DEFAULT_BUILDINGS = [
-'المبنى الرئيسي (الإدارة)',
-'مبنى الفصول الدراسية (أ)',
-'مبنى الفصول الدراسية (ب)',
-'مبنى المختبرات والأنشطة',
-'الصالة الرياضية والمسرح',
-'المسجد والمرافق الخارجية',
-'غرفة الكهرباء والمضخات',
-'البوابات والأمن'
-];
-​let appState = {
-issues: [],
-buildings: JSON.parse(localStorage.getItem('zayed_buildings')) || DEFAULT_BUILDINGS,
-user: JSON.parse(localStorage.getItem('zayed_user')) || { name: 'مهندس الموقع', role: 'مهندس موقع' },
-config: JSON.parse(localStorage.getItem('zayed_config')) || {
-apiUrl: '', // ضع رابط السيرفر هنا أو من أيقونة الإعدادات في الصفحة
-imageQuality: 0.78
-},
-currentFormPhotos: [],
-isSyncing: false
-};
-​// BroadcastChannel للمزامنة اللحظية بين التبويبات المفتوحة على نفس الجهاز
-const syncChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('zayed_issues_channel') : null;
-if (syncChannel) {
-syncChannel.onmessage = (event) => {
-if (event.data && event.data.type === 'REFRESH') {
-loadIssuesFromDB().then(() => renderIssues());
-}
-};
-}
-​// IndexedDB Wrapper (يتسع لمئات الميجابايت من الصور بدون تعليق)
-const DB_NAME = 'ZayedComplexMaintenanceDB';
-const DB_VERSION = 1;
-const STORE_NAME = 'issues';
-​function openDB() {
-return new Promise((resolve, reject) => {
-const request = indexedDB.open(DB_NAME, DB_VERSION);
-request.onupgradeneeded = (e) => {
-const db = e.target.result;
-if (!db.objectStoreNames.contains(STORE_NAME)) {
-db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-}
-};
-request.onsuccess = () => resolve(request.result);
-request.onerror = () => reject(request.error);
-});
-}
-​async function saveIssueToDB(issue) {
-const db = await openDB();
-return new Promise((resolve, reject) => {
-const tx = db.transaction(STORE_NAME, 'readwrite');
-tx.objectStore(STORE_NAME).put(issue);
-tx.oncomplete = () => resolve();
-tx.onerror = () => reject(tx.error);
-});
-}
-​async function deleteIssueFromDB(id) {
-const db = await openDB();
-return new Promise((resolve, reject) => {
-const tx = db.transaction(STORE_NAME, 'readwrite');
-tx.objectStore(STORE_NAME).delete(id);
-tx.oncomplete = () => resolve();
-tx.onerror = () => reject(tx.error);
-});
-}
-​async function loadIssuesFromDB() {
-const db = await openDB();
-return new Promise((resolve, reject) => {
-const tx = db.transaction(STORE_NAME, 'readonly');
-const req = tx.objectStore(STORE_NAME).getAll();
-req.onsuccess = () => {
-appState.issues = (req.result || []).sort((a, b) => b.updatedAt - a.updatedAt);
-resolve(appState.issues);
-};
-req.onerror = () => reject(req.error);
-});
-}
-​/********************************************************************
-* 2. محرك ضغط ومزامنة الصور الذكي (يحل مشكلة صور الآيفون HEIC/Large JPEG)
-********************************************************************/
-function compressImageFile(file, maxWidth = 1280, quality = 0.78) {
-return new Promise((resolve, reject) => {
-const reader = new FileReader();
-reader.onload = (event) => {
-const img = new Image();
-img.onload = () => {
-let width = img.width;
-let height = img.height;
-​if (width > maxWidth || height > maxWidth) {
-if (width > height) {
-height = Math.round((height * maxWidth) / width);
-width = maxWidth;
-} else {
-width = Math.round((width * maxWidth) / height);
-height = maxWidth;
-}
-}
-​const canvas = document.createElement('canvas');
-canvas.width = width;
-canvas.height = height;
-const ctx = canvas.getContext('2d');
-ctx.fillStyle = '#FFFFFF';
-ctx.fillRect(0, 0, width, height);
-ctx.drawImage(img, 0, 0, width, height);
-​// تحويل الصورة إلى JPEG مضغوطة وخفيفة جداً للمزامنة السريعة
-const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-resolve(compressedDataUrl);
-};
-img.onerror = (err) => reject(err);
-img.src = event.target.result;
-};
-reader.onerror = (err) => reject(err);
-reader.readAsDataURL(file);
-});
-}
-​async function handleImageSelect(event) {
-const files = Array.from(event.target.files || []);
-if (!files.length) return;
-​const indicator = document.getElementById('imageProcessingIndicator');
-indicator.classList.remove('hidden');
-​const quality = parseFloat(appState.config.imageQuality || 0.78);
-​for (const file of files) {
-try {
-const compressedBase64 = await compressImageFile(file, 1280, quality);
-appState.currentFormPhotos.push({
-id: 'img_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-dataUrl: compressedBase64,
-createdAt: Date.now()
-});
-} catch (err) {
-console.error('Image compression error:', err);
-showToast('تعذر معالجة إحدى الصور، حاول بصورة أخرى', 'error');
-}
-}
-​indicator.classList.add('hidden');
-event.target.value = '';
-renderPhotoPreviews();
-}
-​function renderPhotoPreviews() {
-const container = document.getElementById('photoPreviewContainer');
-const counter = document.getElementById('photoCounter');
-counter.textContent = ${appState.currentFormPhotos.length} صور مرفقة;
-​container.innerHTML = appState.currentFormPhotos.map((photo, index) => <div class="relative group aspect-square rounded-xl overflow-hidden border border-slate-300 bg-white shadow-xs"> <img src="${photo.dataUrl}" onclick="openLightbox('${photo.dataUrl}')" class="w-full h-full object-cover cursor-pointer" /> <button type="button" onclick="removeFormPhoto(${index})" class="absolute top-1 left-1 w-6 h-6 rounded-full bg-red-600 text-white text-xs flex items-center justify-center shadow-md" > <i class="fa-solid fa-trash-can"></i> </button> </div>).join('');
-}
-​function removeFormPhoto(index) {
-appState.currentFormPhotos.splice(index, 1);
-renderPhotoPreviews();
-}
-​/********************************************************************
-* 3. محرك المزامنة السحابية لتعدد المستخدمين (Multi-User Cloud Sync)
-********************************************************************/
-async function syncNow(isManual = false) {
-updateNetworkUI();
-const apiUrl = (appState.config.apiUrl || '').trim();
-​if (!navigator.onLine) {
-if (isManual) showToast('أنت غير متصل بالإنترنت؛ البلاغات محفوظة بأمان على جهازك', 'warning');
-return;
-}
-​if (!apiUrl) {
-if (isManual) {
-showToast('تم الحفظ محلياً. لربط عدة أجهزة معاً، أضف رابط السيرفر من الإعدادات', 'info');
-}
-return;
-}
-​if (appState.isSyncing) return;
-appState.isSyncing = true;
-​const syncIcon = document.getElementById('syncIcon');
-syncIcon.classList.add('fa-spin');
-document.getElementById('syncStatusText').textContent = 'جاري مزامنة البلاغات والصور...';
-​try {
-const isFirebase = apiUrl.includes('firebaseio.com') || apiUrl.includes('firebasedatabase.app');
-const targetUrl = isFirebase && !apiUrl.endsWith('.json') ? ${apiUrl.replace(/\/$/, '')}/issues.json : apiUrl;
-​// 1. رفع أي بلاغات محلية غير متزامنة (Pending Sync Queue)
-const unsyncedIssues = appState.issues.filter(i => i.syncStatus === 'pending');
-​for (const item of unsyncedIssues) {
-if (isFirebase) {
-const itemUrl = targetUrl.replace('.json', /${item.id}.json);
-const res = await fetch(itemUrl, {
-method: 'PUT',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ ...item, syncStatus: 'synced' })
-});
-if (res.ok) {
-item.syncStatus = 'synced';
-await saveIssueToDB(item);
-}
-} else {
-const res = await fetch(targetUrl, {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ ...item, syncStatus: 'synced' })
-});
-if (res.ok) {
-item.syncStatus = 'synced';
-await saveIssueToDB(item);
-}
-}
-}
-​// 2. جلب أحدث البلاغات من السيرفر لدمج بلاغات المستخدمين الآخرين بدون تعارض
-const getRes = await fetch(targetUrl, { method: 'GET', cache: 'no-store' });
-if (getRes.ok) {
-const remoteData = await getRes.json();
-let remoteList = [];
-​if (Array.isArray(remoteData)) {
-remoteList = remoteData;
-} else if (remoteData && Array.isArray(remoteData.issues)) {
-remoteList = remoteData.issues;
-} else if (remoteData && typeof remoteData === 'object') {
-remoteList = Object.values(remoteData);
-}
-​// دمج ذكي يعتمد على أحدث توقيت تعديل (Last-Write-Wins)
-const localMap = new Map(appState.issues.map(i => [i.id, i]));
-for (const remoteItem of remoteList) {
-if (!remoteItem || !remoteItem.id) continue;
-const localItem = localMap.get(remoteItem.id);
-if (!localItem || (remoteItem.updatedAt > localItem.updatedAt && localItem.syncStatus !== 'pending')) {
-remoteItem.syncStatus = 'synced';
-await saveIssueToDB(remoteItem);
-}
-}
-​await loadIssuesFromDB();
-renderIssues();
-}
-​if (isManual) showToast('تمت مزامنة جميع البلاغات والصور بنجاح');
-} catch (err) {
-console.warn('Sync warning:', err);
-if (isManual) showToast('تعذر الاتصال بالسيرفر حالياً، سيتم الرفع تلقائياً لاحقاً', 'warning');
-} finally {
-appState.isSyncing = false;
-syncIcon.classList.remove('fa-spin');
-updateNetworkUI();
-}
-}
-​function updateNetworkUI() {
-const dot = document.getElementById('syncStatusDot');
-const text = document.getElementById('syncStatusText');
-const pendingBadge = document.getElementById('pendingSyncBadge');
-​const pendingCount = appState.issues.filter(i => i.syncStatus === 'pending').length;
-if (pendingCount > 0 && appState.config.apiUrl) {
-pendingBadge.textContent = ${pendingCount} قيد الرفع;
-pendingBadge.classList.remove('hidden');
-} else {
-pendingBadge.classList.add('hidden');
-}
-​if (!navigator.onLine) {
-dot.className = 'w-2 h-2 rounded-full bg-amber-400 inline-block';
-text.textContent = 'وضع عدم الاتصال (حفظ محلي آمن)';
-} else if (appState.config.apiUrl) {
-dot.className = 'w-2 h-2 rounded-full bg-emerald-400 inline-block';
-text.textContent = 'متصل بالسيرفر ومتزامن';
-} else {
-dot.className = 'w-2 h-2 rounded-full bg-blue-400 inline-block';
-text.textContent = 'جاهز (حفظ محلي فوري)';
-}
-}
-​window.addEventListener('online', () => {
-updateNetworkUI();
-syncNow(false);
-});
-window.addEventListener('offline', () => updateNetworkUI());
-​/********************************************************************
-* 4. إدارة البلاغات (إضافة، تعديل، تغيير حالة، حذف، عرض)
-********************************************************************/
-function populateBuildingsSelects() {
-const filterSelect = document.getElementById('filterBuilding');
-const formSelect = document.getElementById('issueBuilding');
-​const currentFilter = filterSelect.value || 'all';
-filterSelect.innerHTML = <option value="all">كل المباني</option> +
-appState.buildings.map(b => <option value="${b}">${b}</option>).join('');
-filterSelect.value = currentFilter;
-​formSelect.innerHTML = appState.buildings.map(b => <option value="${b}">${b}</option>).join('');
-}
-​function promptNewBuilding() {
-const name = prompt('أدخل اسم المبنى أو القسم الجديد:');
-if (name && name.trim()) {
-const clean = name.trim();
-if (!appState.buildings.includes(clean)) {
-appState.buildings.push(clean);
-localStorage.setItem('zayed_buildings', JSON.stringify(appState.buildings));
-populateBuildingsSelects();
-document.getElementById('issueBuilding').value = clean;
-showToast('تمت إضافة المبنى بنجاح');
-}
-}
-}
-​function openIssueModal(issueId = null) {
-const modal = document.getElementById('issueModal');
-const form = document.getElementById('issueForm');
-form.reset();
-populateBuildingsSelects();
-​if (issueId) {
-const issue = appState.issues.find(i => i.id === issueId);
-if (!issue) return;
-document.getElementById('modalTitle').innerHTML = <i class="fa-solid fa-pen-to-square text-amber-400"></i><span>تعديل البلاغ #${issue.ticketNo || ''}</span>;
-document.getElementById('issueId').value = issue.id;
-document.getElementById('issueBuilding').value = issue.building;
-document.getElementById('issueLocation').value = issue.location;
-document.getElementById('issueCategory').value = issue.category;
-document.getElementById('issuePriority').value = issue.priority;
-document.getElementById('issueStatus').value = issue.status;
-document.getElementById('issueDescription').value = issue.description;
-document.getElementById('issueTechNotes').value = issue.techNotes || '';
-appState.currentFormPhotos = Array.isArray(issue.photos) ? [...issue.photos] : [];
-} else {
-document.getElementById('modalTitle').innerHTML = <i class="fa-solid fa-circle-plus text-emerald-400"></i><span>تسجيل بلاغ جديد</span>;
-document.getElementById('issueId').value = '';
-document.getElementById('issueStatus').value = 'new';
-appState.currentFormPhotos = [];
-}
-​renderPhotoPreviews();
-modal.classList.remove('hidden');
-modal.classList.add('flex');
-}
-​function closeIssueModal() {
-const modal = document.getElementById('issueModal');
-modal.classList.add('hidden');
-modal.classList.remove('flex');
-}
-​async function saveIssue(event) {
-event.preventDefault();
-const idInput = document.getElementById('issueId').value;
-const now = Date.now();
-​let existingIssue = idInput ? appState.issues.find(i => i.id === idInput) : null;
-​const issueData = {
-id: existingIssue ? existingIssue.id : 'iss_' + now + '_' + Math.random().toString(36).slice(2, 6),
-ticketNo: existingIssue ? existingIssue.ticketNo : Math.floor(1000 + Math.random() * 9000),
-building: document.getElementById('issueBuilding').value,
-location: document.getElementById('issueLocation').value.trim(),
-category: document.getElementById('issueCategory').value,
-priority: document.getElementById('issuePriority').value,
-status: document.getElementById('issueStatus').value,
-description: document.getElementById('issueDescription').value.trim(),
-techNotes: document.getElementById('issueTechNotes').value.trim(),
-photos: [...appState.currentFormPhotos],
-createdBy: existingIssue ? existingIssue.createdBy : appState.user.name,
-createdByRole: existingIssue ? existingIssue.createdByRole : appState.user.role,
-updatedBy: appState.user.name,
-createdAt: existingIssue ? existingIssue.createdAt : now,
-updatedAt: now,
-syncStatus: 'pending'
-};
-​await saveIssueToDB(issueData);
-await loadIssuesFromDB();
-closeIssueModal();
-renderIssues();
-showToast(existingIssue ? 'تم تحديث البلاغ بنجاح' : 'تم تسجيل البلاغ وحفظ الصور بنجاح');
-​if (syncChannel) syncChannel.postMessage({ type: 'REFRESH' });
-syncNow(false);
-}
-​async function quickChangeStatus(issueId, newStatus) {
-const issue = appState.issues.find(i => i.id === issueId);
-if (!issue) return;
-issue.status = newStatus;
-issue.updatedAt = Date.now();
-issue.updatedBy = appState.user.name;
-issue.syncStatus = 'pending';
-​await saveIssueToDB(issue);
-await loadIssuesFromDB();
-renderIssues();
-showToast('تم تحديث حالة البلاغ');
-if (syncChannel) syncChannel.postMessage({ type: 'REFRESH' });
-syncNow(false);
-}
-​async function deleteIssue(issueId) {
-if (!confirm('هل أنت متأكد من حذف هذا البلاغ نهائياً؟')) return;
-await deleteIssueFromDB(issueId);
-await loadIssuesFromDB();
-renderIssues();
-showToast('تم حذف البلاغ');
-if (syncChannel) syncChannel.postMessage({ type: 'REFRESH' });
-}
-​function setQuickFilter(status) {
-document.getElementById('filterStatus').value = status;
-renderIssues();
-}
-​/********************************************************************
-* 5. عرض البطاقات والإحصائيات (UI Rendering)
-********************************************************************/
-function getStatusBadge(status) {
-const map = {
-new: { label: 'جديد', classes: 'bg-red-100 text-red-700 border-red-200' },
-in_progress: { label: 'قيد المعالجة', classes: 'bg-amber-100 text-amber-800 border-amber-200' },
-waiting_parts: { label: 'بانتظار قطع غيار', classes: 'bg-purple-100 text-purple-700 border-purple-200' },
-resolved: { label: 'تم الإنجاز', classes: 'bg-emerald-100 text-emerald-700 border-emerald-200' }
-};
-return map[status] || map.new;
-}
-​function getPriorityBadge(priority) {
-const map = {
-normal: { label: 'عادي', icon: 'fa-circle-info', classes: 'text-slate-600 bg-slate-100' },
-medium: { label: 'متوسط', icon: 'fa-clock', classes: 'text-blue-700 bg-blue-50' },
-high: { label: 'عالي', icon: 'fa-arrow-up', classes: 'text-orange-700 bg-orange-50' },
-urgent: { label: 'طارئ جداً', icon: 'fa-fire-flame-curved', classes: 'text-red-700 bg-red-50 font-extrabold' }
-};
-return map[priority] || map.medium;
-}
-​function formatDate(ts) {
-if (!ts) return '';
-const d = new Date(ts);
-return d.toLocaleDateString('ar-AE', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-​function renderIssues() {
-// Update Statistics
-const total = appState.issues.length;
-const countNew = appState.issues.filter(i => i.status === 'new').length;
-const countProgress = appState.issues.filter(i => i.status === 'in_progress' || i.status === 'waiting_parts').length;
-const countResolved = appState.issues.filter(i => i.status === 'resolved').length;
-​document.getElementById('statTotal').textContent = total;
-document.getElementById('statNew').textContent = countNew;
-document.getElementById('statProgress').textContent = countProgress;
-document.getElementById('statResolved').textContent = countResolved;
-​// Filter Logic
-const query = (document.getElementById('searchInput').value || '').trim().toLowerCase();
-const bFilter = document.getElementById('filterBuilding').value;
-const cFilter = document.getElementById('filterCategory').value;
-const sFilter = document.getElementById('filterStatus').value;
-​const filtered = appState.issues.filter(item => {
-if (bFilter !== 'all' && item.building !== bFilter) return false;
-if (cFilter !== 'all' && item.category !== cFilter) return false;
-if (sFilter !== 'all' && item.status !== sFilter) return false;
-​if (query) {
-const haystack = ${item.ticketNo} ${item.building} ${item.location} ${item.category} ${item.description} ${item.techNotes || ''} ${item.createdBy || ''}.toLowerCase();
-if (!haystack.includes(query)) return false;
-}
-return true;
-});
-​document.getElementById('resultsCountText').textContent = عرض ${filtered.length} من أصل ${total} بلاغ;
-​const container = document.getElementById('issuesContainer');
-const emptyState = document.getElementById('emptyState');
-​if (filtered.length === 0) {
-container.innerHTML = '';
-emptyState.classList.remove('hidden');
-return;
-}
-​emptyState.classList.add('hidden');
-​container.innerHTML = filtered.map(issue => {
-const statusInfo = getStatusBadge(issue.status);
-const priorityInfo = getPriorityBadge(issue.priority);
-const photos = Array.isArray(issue.photos) ? issue.photos : [];
-​return `
-<div class="bg-white rounded-2xl shadow-xs border border-slate-200/90 overflow-hidden flex flex-col justify-between hover:shadow-md transition">
-<div>
-<!-- Card Header -->
-<div class="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between gap-2">
-<div class="flex items-center gap-2">
-<span class="bg-slate-800 text-white text-xs font-extrabold px-2.5 py-1 rounded-lg">#{issue.ticketNo || '---'}</span>
-<span class="text-xs font-bold px-2.5 py-1 rounded-lg ${priorityInfo.classes}">
-<i class="fa-solid ${priorityInfo.icon} ml-1"></i>{priorityInfo.label}
-</span>
-</div>
-<span class="text-xs font-extrabold px-2.5 py-1 rounded-lg border ${statusInfo.classes}">
-${statusInfo.label}
-</span>
-</div>
-​<!-- Card Body -->
-<div class="p-4 space-y-2.5">
-<div class="flex items-start justify-between gap-2">
-<div>
-<h3 class="font-extrabold text-slate-900 text-sm sm:text-base">{issue.building}</h3>
-<p class="text-xs text-emerald-700 font-bold mt-0.5">
-<i class="fa-solid fa-location-dot ml-1"></i>{issue.location} • <span class="text-slate-600">${issue.category}</span>
-</p>
-</div>
-</div>
-​<p class="text-xs sm:text-sm text-slate-700 bg-slate-50 p-2.5 rounded-xl border border-slate-100 leading-relaxed whitespace-pre-line">${issue.description}</p>
-​${issue.techNotes ? <div class="bg-emerald-50/70 border border-emerald-200/70 p-2.5 rounded-xl text-xs text-emerald-950"> <span class="font-bold"><i class="fa-solid fa-wrench ml-1 text-emerald-600"></i>ملاحظات الفني:</span> ${issue.techNotes} </div> : ''}
-​<!-- Photos Strip -->
-${photos.length > 0 ? <div class="pt-1"> <p class="text-[11px] text-slate-400 font-bold mb-1.5">الصور المرفقة (${photos.length}):</p> <div class="flex gap-2 overflow-x-auto pb-1"> ${photos.map(p =>
-<img
-src="${p.dataUrl}"
-onclick="openLightbox('${p.dataUrl}')"
-class="w-16 h-16 rounded-xl object-cover border border-slate-200 cursor-pointer shrink-0 hover:opacity-90 transition"
-alt="صورة البلاغ"
-/>
-).join('')} </div> </div>  : ''}
-</div>
-</div>
-​<!-- Card Footer -->
-<div class="px-4 py-2.5 bg-slate-50/70 border-t border-slate-100 flex flex-col gap-2">
-<div class="flex items-center justify-between text-[11px] text-slate-500">
-<span><i class="fa-solid fa-user ml-1 text-slate-400"></i>سجله: <strong>{issue.createdBy || 'مستخدم'}</strong></span>
-<span><i class="fa-regular fa-clock ml-1"></i>{formatDate(issue.updatedAt)}</span>
-</div>
-​<div class="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-200/60 no-print">
-<select
-onchange="quickChangeStatus('${issue.id}', this.value)"
-class="flex-1 bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-emerald-500"
->
-<option value="new" ${issue.status === 'new' ? 'selected' : ''}>🆕 جديد</option>
-<option value="in_progress" ${issue.status === 'in_progress' ? 'selected' : ''}>🔧 قيد المعالجة</option>
-<option value="waiting_parts" ${issue.status === 'waiting_parts' ? 'selected' : ''}>📦 بانتظار قطع</option>
-<option value="resolved" ${issue.status === 'resolved' ? 'selected' : ''}>✅ تم الإنجاز</option>
-</select>
-​<button
-onclick="openIssueModal('${issue.id}')"
-class="bg-slate-200/80 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition"
->
-<i class="fa-solid fa-pen"></i>
-<span>تعديل/صور</span>
-</button>
-​<button
-onclick="deleteIssue('${issue.id}')"
-class="bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1.5 rounded-lg text-xs transition"
-title="حذف"
->
-<i class="fa-solid fa-trash-can"></i>
-</button>
-</div>
-</div>
-</div>
-`;
-}).join('');
-​updateNetworkUI();
-}
-​/********************************************************************
-* 6. النوافذ المساعدة والتصدير والنسخ الاحتياطي
-********************************************************************/
-function openLightbox(src) {
-const modal = document.getElementById('lightboxModal');
-document.getElementById('lightboxImage').src = src;
-modal.classList.remove('hidden');
-modal.classList.add('flex');
-}
-​function closeLightbox() {
-const modal = document.getElementById('lightboxModal');
-modal.classList.add('hidden');
-modal.classList.remove('flex');
-}
-​function openUserModal() {
-document.getElementById('inputUserName').value = appState.user.name;
-document.getElementById('inputUserRole').value = appState.user.role;
-const m = document.getElementById('userModal');
-m.classList.remove('hidden');
-m.classList.add('flex');
-}
-​function closeUserModal() {
-const m = document.getElementById('userModal');
-m.classList.add('hidden');
-m.classList.remove('flex');
-}
-​function saveUserProfile() {
-const name = document.getElementById('inputUserName').value.trim() || 'مهندس الموقع';
-const role = document.getElementById('inputUserRole').value;
-appState.user = { name, role };
-localStorage.setItem('zayed_user', JSON.stringify(appState.user));
-document.getElementById('currentUserNameDisplay').textContent = name;
-closeUserModal();
-showToast(مرحباً بك، ${name});
-}
-​function openSettingsModal() {
-document.getElementById('inputApiUrl').value = appState.config.apiUrl || '';
-document.getElementById('inputImageQuality').value = String(appState.config.imageQuality || '0.78');
-const m = document.getElementById('settingsModal');
-m.classList.remove('hidden');
-m.classList.add('flex');
-}
-​function closeSettingsModal() {
-const m = document.getElementById('settingsModal');
-m.classList.add('hidden');
-m.classList.remove('flex');
-}
-​function saveSettings() {
-appState.config.apiUrl = document.getElementById('inputApiUrl').value.trim();
-appState.config.imageQuality = parseFloat(document.getElementById('inputImageQuality').value || '0.78');
-localStorage.setItem('zayed_config', JSON.stringify(appState.config));
-closeSettingsModal();
-showToast('تم حفظ إعدادات المزامنة');
-syncNow(true);
-}
-​function exportCSV() {
-if (!appState.issues.length) {
-showToast('لا توجد بيانات لتصديرها', 'warning');
-return;
-}
-const headers = ['رقم البلاغ', 'المبنى', 'الموقع', 'التصنيف', 'الأولوية', 'الحالة', 'الوصف', 'ملاحظات الفني', 'مسجل البلاغ', 'التاريخ'];
-const rows = appState.issues.map(i => [
-i.ticketNo || '',
-"${(i.building || '').replace(/"/g, '""')}",
-"${(i.location || '').replace(/"/g, '""')}",
-"${(i.category || '').replace(/"/g, '""')}",
-i.priority || '',
-getStatusBadge(i.status).label,
-"${(i.description || '').replace(/"/g, '""')}",
-"${(i.techNotes || '').replace(/"/g, '""')}",
-"${(i.createdBy || '').replace(/"/g, '""')}",
-"${formatDate(i.createdAt)}"
-]);
-​const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-const url = URL.createObjectURL(blob);
-const a = document.createElement('a');
-a.href = url;
-a.download = zayed_issues_${new Date().toISOString().slice(0,10)}.csv;
-a.click();
-URL.revokeObjectURL(url);
-}
-​function downloadBackupJSON() {
-const dataStr = JSON.stringify({
-buildings: appState.buildings,
-issues: appState.issues,
-exportedAt: new Date().toISOString()
-});
-const blob = new Blob([dataStr], { type: 'application/json' });
-const url = URL.createObjectURL(blob);
-const a = document.createElement('a');
-a.href = url;
-a.download = zayed_backup_${new Date().toISOString().slice(0,10)}.json;
+<body class="bg-slate-100 text-slate-800 flex flex-col min-h-screen">
 
-a.click();
-URL.revokeObjectURL(url);
-}
-​async function restoreBackupJSON(event) {
-const file = event.target.files[0];
-if (!file) return;
-try {
-const text = await file.text();
-const parsed = JSON.parse(text);
-if (Array.isArray(parsed.buildings)) {
-appState.buildings = parsed.buildings;
-localStorage.setItem('zayed_buildings', JSON.stringify(appState.buildings));
-}
-if (Array.isArray(parsed.issues)) {
-for (const iss of parsed.issues) {
-await saveIssueToDB(iss);
-}
-await loadIssuesFromDB();
-populateBuildingsSelects();
-renderIssues();
-closeSettingsModal();
-showToast('تمت استعادة النسخة الاحتياطية بنجاح');
-}
-} catch (e) {
-showToast('ملف النسخة الاحتياطية غير صالح', 'error');
-}
-}
-​let toastTimeout;
-function showToast(message, type = 'success') {
-const toast = document.getElementById('toast');
-const icon = document.getElementById('toastIcon');
-document.getElementById('toastMessage').textContent = message;
-​if (type === 'error') {
-icon.className = 'fa-solid fa-circle-xmark text-red-400';
-} else if (type === 'warning') {
-icon.className = 'fa-solid fa-triangle-exclamation text-amber-400';
-} else {
-icon.className = 'fa-solid fa-circle-check text-emerald-400';
-}
-​toast.classList.remove('hidden');
-toast.classList.add('flex');
-clearTimeout(toastTimeout);
-toastTimeout = setTimeout(() => {
-toast.classList.add('hidden');
-toast.classList.remove('flex');
-}, 3500);
-}
-​/********************************************************************
-* 7. بدء التشغيل التلقائي عند فتح الصفحة
-********************************************************************/
-async function initApp() {
-document.getElementById('currentUserNameDisplay').textContent = appState.user.name;
-populateBuildingsSelects();
-await loadIssuesFromDB();
-renderIssues();
-updateNetworkUI();
-​// مزامنة دورية كل 20 ثانية في الخلفية لتحديث بلاغات المستخدمين الآخرين
-setInterval(() => {
-if (navigator.onLine && appState.config.apiUrl) {
-syncNow(false);
-}
-}, 20000);
-}
-​window.addEventListener('DOMContentLoaded', initApp);
-</script>
+  <!-- الشريط العلوي -->
+  <header class="bg-sky-800 text-white shadow-md sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xl">
+          <i class="fa-solid fa-school"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-bold leading-tight">مجمع زايد التعليمي</h1>
+          <p class="text-xs text-sky-200" id="syncStatus">
+            <i class="fa-solid fa-circle text-[9px] text-emerald-400 mr-1"></i> متصل - جاهز للمزامنة
+          </p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-2">
+        <span class="text-xs bg-sky-900/60 px-2.5 py-1.5 rounded-lg border border-sky-700/50" id="roleBadge">المفتش (1111)</span>
+        <button onclick="openModal('pinModal')" class="w-8 h-8 rounded-lg bg-sky-700 hover:bg-sky-600 flex items-center justify-center text-sm">
+          <i class="fa-solid fa-key"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- المحتوى الرئيسي القابل للتبديل -->
+  <main class="flex-1 max-w-6xl w-full mx-auto p-4 pb-24">
+
+    <!-- 1. تبويب الرئيسية -->
+    <section id="tab-dashboard" class="tab-content active space-y-4">
+      <!-- بطاقات الإحصائيات -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80 flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div>
+            <p class="text-xs text-slate-500 font-medium">قيد الانتظار</p>
+            <h3 class="text-xl font-bold text-slate-800" id="statPending">0</h3>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80 flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-screwdriver-wrench"></i>
+          </div>
+          <div>
+            <p class="text-xs text-slate-500 font-medium">جاري العمل</p>
+            <h3 class="text-xl font-bold text-slate-800" id="statProgress">0</h3>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80 flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <div>
+            <p class="text-xs text-slate-500 font-medium">تم الإنجاز</p>
+            <h3 class="text-xl font-bold text-slate-800" id="statCompleted">0</h3>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80 flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-clipboard-list"></i>
+          </div>
+          <div>
+            <p class="text-xs text-slate-500 font-medium">إجمالي البلاغات</p>
+            <h3 class="text-xl font-bold text-slate-800" id="statTotal">0</h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- تنبيه سريع وزر تسجيل بلاغ مباشر -->
+      <div class="bg-gradient-to-r from-sky-600 to-sky-700 text-white p-5 rounded-2xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-bold">تسجيل ومتابعة أعطال المرافق</h2>
+          <p class="text-xs text-sky-100 mt-0.5">يمكنك إضافة بلاغ جديد وتصوير العطل مباشرة بالكاميرا لرفعه لفرق الصيانة.</p>
+        </div>
+        <button onclick="openNewIssueModal()" class="w-full sm:w-auto px-5 py-2.5 bg-white text-sky-800 font-bold rounded-xl text-sm shadow hover:bg-sky-50 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-plus-circle text-base"></i> إضافة بلاغ عطل
+        </button>
+      </div>
+
+      <!-- آخر البلاغات المسجلة -->
+      <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-bold text-sm text-slate-800">أحدث البلاغات الميدانية</h3>
+          <button onclick="switchTab('tab-issues')" class="text-xs text-sky-600 font-bold hover:underline">عرض الكل</button>
+        </div>
+        <div id="recentIssuesList" class="space-y-2">
+          <p class="text-center text-slate-400 text-xs py-6">لا توجد بلاغات مسجلة حالياً.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. تبويب المخطط التفاعلي للمجمع -->
+    <section id="tab-blueprint" class="tab-content space-y-4">
+      <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3 mb-4">
+          <div>
+            <h2 class="font-bold text-base text-slate-800">المخطط الهندسي للمرافق</h2>
+            <p class="text-xs text-slate-500">اختر القاعة أو المرفق لاستعراض الأعطال أو الإبلاغ عنها</p>
+          </div>
+          
+          <!-- اختيار الدور -->
+          <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl self-start">
+            <button onclick="filterFloor('ground')" id="btnFloorGround" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-white shadow-sm text-sky-700">الدور الأرضي</button>
+            <button onclick="filterFloor('first')" id="btnFloorFirst" class="px-3 py-1.5 text-xs font-bold rounded-lg text-slate-600">الدور العلوي</button>
+            <button onclick="filterFloor('external')" id="btnFloorExternal" class="px-3 py-1.5 text-xs font-bold rounded-lg text-slate-600">المناطق الخارجية</button>
+          </div>
+        </div>
+
+        <!-- شبكة الغرف والمرافق -->
+        <div class="blueprint-grid" id="blueprintContainer">
+          <!-- يتم تعبئتها ديناميكياً بواسطة JavaScript -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. تبويب سجل الأعطال -->
+    <section id="tab-issues" class="tab-content space-y-4">
+      <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80 space-y-3">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <h2 class="font-bold text-base text-slate-800 self-start">سجل البلاغات والأعطال</h2>
+          
+          <!-- حقل البحث -->
+          <div class="relative w-full sm:w-64">
+            <i class="fa-solid fa-magnifying-glass absolute right-3 top-2.5 text-slate-400 text-xs"></i>
+            <input type="text" id="searchInput" oninput="renderIssues()" placeholder="بحث بالموقع أو نوع العطل..." class="w-full pr-8 pl-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-sky-500">
+          </div>
+        </div>
+
+        <!-- أزرار الفلترة السريعة -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+          <button onclick="setFilter('all')" class="issue-filter px-3 py-1 rounded-lg font-bold bg-sky-100 text-sky-800" data-filter="all">الكل</button>
+          <button onclick="setFilter('pending')" class="issue-filter px-3 py-1 rounded-lg font-bold bg-slate-100 text-slate-600" data-filter="pending">معلق</button>
+          <button onclick="setFilter('in_progress')" class="issue-filter px-3 py-1 rounded-lg font-bold bg-slate-100 text-slate-600" data-filter="in_progress">قيد الإصلاح</button>
+          <button onclick="setFilter('completed')" class="issue-filter px-3 py-1 rounded-lg font-bold bg-slate-100 text-slate-600" data-filter="completed">مكتمل</button>
+        </div>
+
+        <!-- قائمة البلاغات -->
+        <div id="issuesList" class="space-y-3 pt-2">
+          <!-- يتم التعبئة عبر JavaScript -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. تبويب التفتيش الأمني والباركود (QR) -->
+    <section id="tab-inspection" class="tab-content space-y-4">
+      <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80">
+        <h2 class="font-bold text-base text-slate-800 mb-1">جولات التفتيش الأمني الميداني</h2>
+        <p class="text-xs text-slate-500 mb-4">توثيق الحضور وتفقد القاعات عبر الباركود أو الاختيار المباشر</p>
+
+        <div class="bg-slate-50 border border-dashed border-slate-300 rounded-2xl p-6 text-center space-y-3">
+          <div class="w-16 h-16 mx-auto rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-2xl">
+            <i class="fa-solid fa-qrcode"></i>
+          </div>
+          <h3 class="font-bold text-sm text-slate-800">مسح ملصق QR للمرفق</h3>
+          <p class="text-xs text-slate-500 max-w-sm mx-auto">امسح رمز القاعة للتحقق من حالتها الأمنية وتسجيل وقت المرور الفعلي.</p>
+          <button onclick="simulateScan()" class="px-5 py-2 bg-sky-700 hover:bg-sky-800 text-white rounded-xl text-xs font-bold shadow">
+            بدء مسح الرمز عبر الكاميرا
+          </button>
+        </div>
+
+        <!-- سجل الجولات الأخيرة -->
+        <div class="mt-5">
+          <h3 class="font-bold text-xs text-slate-700 mb-2">سجل الجولات الموثقة اليوم</h3>
+          <div id="inspectionLog" class="space-y-2">
+            <div class="p-3 bg-slate-50 rounded-xl text-xs flex justify-between items-center border border-slate-100">
+              <span class="font-bold text-slate-700"><i class="fa-solid fa-check-circle text-emerald-500 ml-1.5"></i> تم تفقد جناح الإدارة والمختبرات</span>
+              <span class="text-slate-400">اليوم - 07:45 م</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. تبويب قائمة الفحص المسائي -->
+    <section id="tab-checklist" class="tab-content space-y-4">
+      <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <h2 class="font-bold text-base text-slate-800">قائمة الفحص والإغلاق المسائي</h2>
+            <p class="text-xs text-slate-500">التأكد من جاهزية وأمان مرافق المجمع عند نهاية اليوم</p>
+          </div>
+          <span class="text-xs font-bold bg-amber-100 text-amber-800 px-2.5 py-1 rounded-lg" id="checklistProgress">0 / 6 مكتمل</span>
+        </div>
+
+        <div class="space-y-2 mt-4" id="checklistItems">
+          <!-- عناصر الفحص -->
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-100 flex justify-end">
+          <button onclick="resetEveningChecklist()" class="text-xs text-slate-500 hover:text-slate-800 font-bold px-3 py-1.5">إعادة ضبط القائمة</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- شريط التنقل السفلي الثابت للتبويبات (Bottom Bar) -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-lg z-50">
+    <div class="max-w-md mx-auto grid grid-cols-5 text-center">
+      <button onclick="switchTab('tab-dashboard')" class="nav-btn active py-2.5 flex flex-col items-center justify-center text-slate-500 text-[11px] font-bold" id="nav-tab-dashboard">
+        <i class="fa-solid fa-gauge-high text-base mb-0.5"></i>
+        <span>الرئيسية</span>
+      </button>
+
+      <button onclick="switchTab('tab-blueprint')" class="nav-btn py-2.5 flex flex-col items-center justify-center text-slate-500 text-[11px] font-bold" id="nav-tab-blueprint">
+        <i class="fa-solid fa-map-location-dot text-base mb-0.5"></i>
+        <span>المخطط</span>
+      </button>
+
+      <button onclick="switchTab('tab-issues')" class="nav-btn py-2.5 flex flex-col items-center justify-center text-slate-500 text-[11px] font-bold" id="nav-tab-issues">
+        <i class="fa-solid fa-wrench text-base mb-0.5"></i>
+        <span>الأعطال</span>
+      </button>
+
+      <button onclick="switchTab('tab-inspection')" class="nav-btn py-2.5 flex flex-col items-center justify-center text-slate-500 text-[11px] font-bold" id="nav-tab-inspection">
+        <i class="fa-solid fa-shield-halved text-base mb-0.5"></i>
+        <span>التفتيش</span>
+      </button>
+
+      <button onclick="switchTab('tab-checklist')" class="nav-btn py-2.5 flex flex-col items-center justify-center text-slate-500 text-[11px] font-bold" id="nav-tab-checklist">
+        <i class="fa-solid fa-list-check text-base mb-0.5"></i>
+        <span>الفحص</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- نافذة تسجيل بلاغ جديد (Modal) -->
+  <div id="newIssueModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+      <div class="bg-sky-800 text-white px-4 py-3 flex items-center justify-between">
+        <h3 class="font-bold text-sm"><i class="fa-solid fa-plus-circle ml-1.5"></i> تسجيل بلاغ عطل جديد</h3>
+        <button onclick="closeModal('newIssueModal')" class="text-white/80 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="issueForm" onsubmit="handleIssueSubmit(event)" class="p-4 space-y-3 overflow-y-auto flex-1 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">الموقع / القاعة</label>
+          <select id="issueLocation" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl focus:border-sky-500">
+            <!-- تعبئة المواقع -->
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">تخصص العطل</label>
+            <select id="issueType" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
+              <option value="تكييف">تكييف (HVAC)</option>
+              <option value="كهرباء">كهرباء</option>
+              <option value="سباكة">سباكة وصحي</option>
+              <option value="أبواب وأقفال">أبواب وأقفال</option>
+              <option value="أخرى">أعمال مدنية / عامة</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">درجة الأولوية</label>
+            <select id="issuePriority" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
+              <option value="متوسطة">متوسطة</option>
+              <option value="عالية">عاجلة / عالية</option>
+              <option value="منخفضة">منخفضة</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">وصف العطل أو الملاحظات</label>
+          <textarea id="issueNote" rows="2" placeholder="اكتب تفاصيل العطل..." required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl"></textarea>
+        </div>
+
+        <!-- التقاط الصورة وضغطها -->
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">صورة العطل (قبل الإصلاح)</label>
+          <div class="flex items-center gap-2">
+            <label class="cursor-pointer flex-1 flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-300 hover:border-sky-500 rounded-xl bg-slate-50 text-slate-600">
+              <i class="fa-solid fa-camera text-base text-sky-600"></i>
+              <span id="photoStatusText">اضغط لالتقاط أو اختيار صورة</span>
+              <input type="file" id="issuePhotoInput" accept="image/*" capture="environment" class="hidden" onchange="processSelectedPhoto(this)">
+            </label>
+          </div>
+          <div id="photoPreviewContainer" class="mt-2 hidden">
+            <img id="photoPreview" class="h-28 w-full object-cover rounded-xl border border-slate-200">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">اسم المبلّغ</label>
+          <input type="text" id="reporterName" value="المناوب الأمني" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" id="saveIssueBtn" class="w-full py-2.5 bg-sky-700 hover:bg-sky-800 text-white font-bold rounded-xl shadow flex items-center justify-center gap-2">
+            <i class="fa-solid fa-cloud-arrow-up"></i> حفظ وإرسال البلاغ
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- نافذة الرمز السري للصلاحيات -->
+  <div id="pinModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-xs p-5 text-center space-y-4 shadow-xl">
+      <div class="w-12 h-12 mx-auto rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xl">
+        <i class="fa-solid fa-lock"></i>
+      </div>
+      <div>
+        <h3 class="font-bold text-sm text-slate-800">تبديل صلاحية المستخدم</h3>
+        <p class="text-xs text-slate-500 mt-1">أدخل الرمز السري المخصص للدور</p>
+      </div>
+
+      <input type="password" id="pinInput" maxlength="4" placeholder="••••" class="w-32 mx-auto text-center tracking-widest text-lg font-bold p-2 border border-slate-300 rounded-xl focus:border-sky-600 focus:outline-none">
+
+      <div class="flex gap-2">
+        <button onclick="verifyPin()" class="flex-1 py-2 bg-sky-700 text-white font-bold text-xs rounded-xl shadow hover:bg-sky-800">تأكيد</button>
+        <button onclick="closeModal('pinModal')" class="flex-1 py-2 bg-slate-100 text-slate-600 font-bold text-xs rounded-xl hover:bg-slate-200">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- تنبيه عائم (Toast Notification) -->
+  <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-slate-800 text-white px-4 py-2 rounded-xl text-xs shadow-lg hidden items-center gap-2">
+    <i class="fa-solid fa-info-circle text-sky-400"></i>
+    <span id="toastMsg">تم الإجراء بنجاح</span>
+  </div>
+
+  <!-- المحرك البرمجي للمنظومة -->
+  <script>
+    // 1. قاعدة بيانات الغرف والمرافق لمجمع زايد التعليمي
+    const DEFAULT_LOCATIONS = [
+      { id: 'G-01', name: 'جناح الصف 1 (أ-ب)', floor: 'ground', wing: 'right' },
+      { id: 'G-02', name: 'جناح الصف 2 (أ-ب)', floor: 'ground', wing: 'right' },
+      { id: 'G-03', name: 'جناح الصف 3 (أ-ب)', floor: 'ground', wing: 'right' },
+      { id: 'G-04', name: 'الإدارة المركزية', floor: 'ground', wing: 'center' },
+      { id: 'G-05', name: 'المسرح المدرسي', floor: 'ground', wing: 'center' },
+      { id: 'G-06', name: 'الصالة الرياضية', floor: 'ground', wing: 'left' },
+      { id: 'G-07', name: 'مختبر العلوم 1', floor: 'ground', wing: 'left' },
+      { id: 'G-08', name: 'المصلى والمرافق', floor: 'ground', wing: 'center' },
+      { id: 'F-01', name: 'جناح الصف 7 و 8', floor: 'first', wing: 'right' },
+      { id: 'F-02', name: 'جناح الصف 9 و 10', floor: 'first', wing: 'right' },
+      { id: 'F-03', name: 'جناح الصف 11 و 12', floor: 'first', wing: 'left' },
+      { id: 'F-04', name: 'مختبر الحاسوب والذكاء الاصطناعي', floor: 'first', wing: 'center' },
+      { id: 'F-05', name: 'المكتبة المدرسية', floor: 'first', wing: 'center' },
+      { id: 'EXT-01', name: 'البوابة الرئيسية والمدخل', floor: 'external', wing: 'ext' },
+      { id: 'EXT-02', name: 'الساحة والملاعب الخارجية', floor: 'external', wing: 'ext' },
+      { id: 'EXT-03', name: 'مواقف الحافلات المدرسية', floor: 'external', wing: 'ext' }
+    ];
+
+    // قائمة الفحص المسائي
+    const DEFAULT_CHECKLIST = [
+      { id: 'chk_1', text: 'التأكد من إغلاق النوافذ وقفل الأبواب الخارجية', done: false },
+      { id: 'chk_2', text: 'فحص إطفاء وحدات التكييف (HVAC) في الفصول غير المستخدمة', done: false },
+      { id: 'chk_3', text: 'التأكد من سلامة وإغلاق محابس المياه في دورات المياه', done: false },
+      { id: 'chk_4', text: 'فحص إطفاء الإنارة الداخلية وتشغيل الإنارة الأمنية الخارجية', done: false },
+      { id: 'chk_5', text: 'تفقد لوحات الكهرباء ومضخات الحريق وخلوها من الإنذارات', done: false },
+      { id: 'chk_6', text: 'تأمين وقفل البوابات الرئيسية والفرعية للمجمع', done: false }
+    ];
+
+    // حالة التطبيق في الذاكرة
+    let appState = {
+      role: 'مفتش',
+      pin: '1111',
+      currentFloor: 'ground',
+      currentFilter: 'all',
+      compressedPhotoBase64: null,
+      issues: JSON.parse(localStorage.getItem('zayed_issues_db')) || [],
+      checklist: JSON.parse(localStorage.getItem('zayed_checklist_db')) || DEFAULT_CHECKLIST
+    };
+
+    // تبديل التبويبات بسلاسة
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(function(el) {
+        el.classList.remove('active');
+      });
+      document.querySelectorAll('.nav-btn').forEach(function(btn) {
+        btn.classList.remove('active');
+      });
+
+      var target = document.getElementById(tabId);
+      var navBtn = document.getElementById('nav-' + tabId);
+
+      if (target) target.classList.add('active');
+      if (navBtn) navBtn.classList.add('active');
+
+      if (tabId === 'tab-blueprint') renderBlueprint();
+      if (tabId === 'tab-issues') renderIssues();
+      if (tabId === 'tab-checklist') renderChecklist();
+      if (tabId === 'tab-dashboard') updateDashboard();
+    }
+
+    // تصفية طابق المخطط
+    function filterFloor(floor) {
+      appState.currentFloor = floor;
+      ['ground', 'first', 'external'].forEach(function(f) {
+        var btn = document.getElementById('btnFloor' + f.charAt(0).toUpperCase() + f.slice(1));
+        if (btn) {
+          if (f === floor) {
+            btn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg bg-white shadow-sm text-sky-700';
+          } else {
+            btn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg text-slate-600';
+          }
+        }
+      });
+      renderBlueprint();
+    }
+
+    // بناء شبكة المخطط الهندسي
+    function renderBlueprint() {
+      var container = document.getElementById('blueprintContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      var filtered = DEFAULT_LOCATIONS.filter(function(loc) {
+        return loc.floor === appState.currentFloor;
+      });
+
+      filtered.forEach(function(loc) {
+        var activeCount = appState.issues.filter(function(iss) {
+          return iss.location_id === loc.id && iss.status !== 'completed';
+        }).length;
+
+        var card = document.createElement('div');
+        card.className = 'p-3 rounded-xl border flex flex-col justify-between h-24 cursor-pointer transition active:scale-95 ' + 
+          (activeCount > 0 ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 border-slate-200 hover:border-sky-300');
+
+        card.onclick = function() {
+          openNewIssueModal(loc.id);
+        };
+
+        var badge = activeCount > 0 
+          ? '<span class="bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">' + activeCount + ' عطل</span>'
+          : '<span class="text-emerald-600 text-[10px] font-bold"><i class="fa-solid fa-check"></i> سليم</span>';
+
+        card.innerHTML = 
+          '<div class="flex items-center justify-between">' +
+            '<span class="text-[10px] font-bold text-slate-400">' + loc.id + '</span>' +
+            badge +
+          '</div>' +
+          '<div class="text-xs font-bold text-slate-700 line-clamp-2 mt-1">' + loc.name + '</div>';
+
+        container.appendChild(card);
+      });
+    }
+
+    // معالجة وضغط الصور تلقائياً (تمنع توقف المتصفح في الآيفون والأندرويد)
+    function processSelectedPhoto(input) {
+      var file = input.files && input.files[0];
+      if (!file) return;
+
+      document.getElementById('photoStatusText').textContent = 'جاري ضغط الصورة ومعالجتها...';
+
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var img = new Image();
+        img.onload = function() {
+          var canvas = document.createElement('canvas');
+          var MAX_WIDTH = 900;
+          var scaleSize = MAX_WIDTH / img.width;
+          
+          if (scaleSize < 1) {
+            canvas.width = MAX_WIDTH;
+            canvas.height = img.height * scaleSize;
+          } else {
+            canvas.width = img.width;
+            canvas.height = img.height;
+          }
+
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          // ضغط الصورة بجودة 0.7 بصيغة JPEG الخفيفة
+          var compressed = canvas.toDataURL('image/jpeg', 0.7);
+          appState.compressedPhotoBase64 = compressed;
+
+          var preview = document.getElementById('photoPreview');
+          var previewContainer = document.getElementById('photoPreviewContainer');
+          preview.src = compressed;
+          previewContainer.classList.remove('hidden');
+          document.getElementById('photoStatusText').textContent = 'تم التقاط الصورة وضغطها بنجاح';
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // حفظ البلاغ الجديد
+    function handleIssueSubmit(event) {
+      event.preventDefault();
+      
+      var locSelect = document.getElementById('issueLocation');
+      var locId = locSelect.value;
+      var locName = locSelect.options[locSelect.selectedIndex].text;
+      
+      var newIssue = {
+        id: 'FLT-' + Date.now().toString().slice(-5),
+        location_id: locId,
+        location_name: locName,
+        type: document.getElementById('issueType').value,
+        priority: document.getElementById('issuePriority').value,
+        note: document.getElementById('issueNote').value,
+        reporter_name: document.getElementById('reporterName').value,
+        status: 'pending',
+        before_photo: appState.compressedPhotoBase64 || null,
+        created_at: new Date().toLocaleString('ar-AE')
+      };
+
+      appState.issues.unshift(newIssue);
+      localStorage.setItem('zayed_issues_db', JSON.stringify(appState.issues));
+
+      closeModal('newIssueModal');
+      document.getElementById('issueForm').reset();
+      document.getElementById('photoPreviewContainer').classList.add('hidden');
+      appState.compressedPhotoBase64 = null;
+
+      showToast('تم تسجيل البلاغ ومزامنته محلياً بنجاح');
+      updateDashboard();
+      renderIssues();
+    }
+
+    // عرض سجل الأعطال
+    function renderIssues() {
+      var container = document.getElementById('issuesList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      var searchVal = (document.getElementById('searchInput') ? document.getElementById('searchInput').value : '').toLowerCase();
+
+      var list = appState.issues.filter(function(item) {
+        var matchesFilter = (appState.currentFilter === 'all') || (item.status === appState.currentFilter);
+        var matchesSearch = item.location_name.toLowerCase().includes(searchVal) || item.type.toLowerCase().includes(searchVal) || item.note.toLowerCase().includes(searchVal);
+        return matchesFilter && matchesSearch;
+      });
+
+      if (list.length === 0) {
+        container.innerHTML = '<p class="text-center text-slate-400 text-xs py-8">لا توجد بلاغات تطابق البحث.</p>';
+        return;
+      }
+
+      list.forEach(function(iss) {
+        var card = document.createElement('div');
+        card.className = 'p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2';
+
+        var statusBg = iss.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : (iss.status === 'in_progress' ? 'bg-sky-100 text-sky-800' : 'bg-amber-100 text-amber-800');
+        var statusText = iss.status === 'completed' ? 'تم الإنجاز' : (iss.status === 'in_progress' ? 'قيد العمل' : 'معلق');
+
+        var photoThumb = iss.before_photo ? '<img src="' + iss.before_photo + '" class="w-12 h-12 object-cover rounded-lg border border-slate-300">' : '';
+
+        card.innerHTML = 
+          '<div class="flex items-center justify-between">' +
+            '<div class="flex items-center gap-2">' +
+              '<span class="font-bold text-xs text-slate-800">' + iss.location_name + '</span>' +
+              '<span class="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-medium">' + iss.type + '</span>' +
+            '</div>' +
+            '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ' + statusBg + '">' + statusText + '</span>' +
+          '</div>' +
+          '<div class="flex gap-3">' +
+            (photoThumb ? '<div>' + photoThumb + '</div>' : '') +
+            '<div class="flex-1">' +
+              '<p class="text-xs text-slate-600">' + iss.note + '</p>' +
+              '<div class="flex items-center justify-between mt-2 text-[10px] text-slate-400">' +
+                '<span>بواسطة: ' + iss.reporter_name + '</span>' +
+                '<span>' + iss.created_at + '</span>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="flex justify-end gap-2 pt-2 border-t border-slate-200/60">' +
+            (iss.status !== 'completed' ? '<button onclick="toggleIssueStatus(\'' + iss.id + '\')" class="px-2.5 py-1 bg-emerald-600 text-white text-[11px] font-bold rounded-lg"><i class="fa-solid fa-check ml-1"></i> تم الإصلاح</button>' : '') +
+            '<button onclick="deleteIssue(\'' + iss.id + '\')" class="px-2 py-1 text-red-500 hover:text-red-700 text-[11px] font-bold"><i class="fa-solid fa-trash"></i></button>' +
+          '</div>';
+
+        container.appendChild(card);
+      });
+    }
+
+    function toggleIssueStatus(id) {
+      appState.issues = appState.issues.map(function(iss) {
+        if (iss.id === id) {
+          iss.status = (iss.status === 'completed' ? 'pending' : 'completed');
+        }
+        return iss;
+      });
+      localStorage.setItem('zayed_issues_db', JSON.stringify(appState.issues));
+      renderIssues();
+      updateDashboard();
+      showToast('تم تحديث حالة البلاغ بنجاح');
+    }
+
+    function deleteIssue(id) {
+      if (!confirm('هل تريد حذف هذا البلاغ؟')) return;
+      appState.issues = appState.issues.filter(function(iss) { return iss.id !== id; });
+      localStorage.setItem('zayed_issues_db', JSON.stringify(appState.issues));
+      renderIssues();
+      updateDashboard();
+      showToast('تم حذف البلاغ');
+    }
+
+    function setFilter(flt) {
+      appState.currentFilter = flt;
+      document.querySelectorAll('.issue-filter').forEach(function(b) {
+        if (b.getAttribute('data-filter') === flt) {
+          b.className = 'issue-filter px-3 py-1 rounded-lg font-bold bg-sky-100 text-sky-800';
+        } else {
+          b.className = 'issue-filter px-3 py-1 rounded-lg font-bold bg-slate-100 text-slate-600';
+        }
+      });
+      renderIssues();
+    }
+
+    // تحديث إحصائيات لوحة التحكم
+    function updateDashboard() {
+      var pending = appState.issues.filter(function(i) { return i.status === 'pending'; }).length;
+      var inProgress = appState.issues.filter(function(i) { return i.status === 'in_progress'; }).length;
+      var completed = appState.issues.filter(function(i) { return i.status === 'completed'; }).length;
+      
+      document.getElementById('statPending').textContent = pending;
+      document.getElementById('statProgress').textContent = inProgress;
+      document.getElementById('statCompleted').textContent = completed;
+      document.getElementById('statTotal').textContent = appState.issues.length;
+
+      var recentList = document.getElementById('recentIssuesList');
+      if (!recentList) return;
+      recentList.innerHTML = '';
+
+      var recents = appState.issues.slice(0, 3);
+      if (recents.length === 0) {
+        recentList.innerHTML = '<p class="text-center text-slate-400 text-xs py-4">لا توجد بلاغات مسجلة بعد.</p>';
+        return;
+      }
+
+      recents.forEach(function(item) {
+        var div = document.createElement('div');
+        div.className = 'p-2.5 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-between text-xs';
+        div.innerHTML = 
+          '<div>' +
+            '<span class="font-bold text-slate-700">' + item.location_name + '</span>' +
+            '<p class="text-[10px] text-slate-400">' + item.type + ' - ' + item.created_at + '</p>' +
+          '</div>' +
+          '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ' + (item.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700') + '">' +
+            (item.status === 'completed' ? 'مكتمل' : 'معلق') +
+          '</span>';
+        recentList.appendChild(div);
+      });
+    }
+
+    // قائمة الفحص المسائي
+    function renderChecklist() {
+      var container = document.getElementById('checklistItems');
+      if (!container) return;
+      container.innerHTML = '';
+
+      var completedCount = 0;
+      appState.checklist.forEach(function(item, idx) {
+        if (item.done) completedCount++;
+
+        var row = document.createElement('div');
+        row.className = 'p-3 rounded-xl border flex items-center justify-between cursor-pointer ' + (item.done ? 'bg-emerald-50/60 border-emerald-200' : 'bg-slate-50 border-slate-200');
+        row.onclick = function() {
+          appState.checklist[idx].done = !appState.checklist[idx].done;
+          localStorage.setItem('zayed_checklist_db', JSON.stringify(appState.checklist));
+          renderChecklist();
+        };
+
+        row.innerHTML = 
+          '<div class="flex items-center gap-3">' +
+            '<div class="w-5 h-5 rounded-md flex items-center justify-center text-xs ' + (item.done ? 'bg-emerald-600 text-white' : 'border border-slate-400') + '">' +
+              (item.done ? '<i class="fa-solid fa-check"></i>' : '') +
+            '</div>' +
+            '<span class="text-xs font-bold ' + (item.done ? 'text-emerald-900 line-through' : 'text-slate-700') + '">' + item.text + '</span>' +
+          '</div>';
+
+        container.appendChild(row);
+      });
+
+      document.getElementById('checklistProgress').textContent = completedCount + ' / ' + appState.checklist.length + ' مكتمل';
+    }
+
+    function resetEveningChecklist() {
+      if (!confirm('إعادة ضبط كافة مهام الفحص لليوم الجديد؟')) return;
+      appState.checklist.forEach(function(i) { i.done = false; });
+      localStorage.setItem('zayed_checklist_db', JSON.stringify(appState.checklist));
+      renderChecklist();
+      showToast('تمت إعادة ضبط القائمة المسائية');
+    }
+
+    // نافذة بلاغ جديد وتعبئة المواقع
+    function openNewIssueModal(preselectedLocId) {
+      var select = document.getElementById('issueLocation');
+      select.innerHTML = '';
+      DEFAULT_LOCATIONS.forEach(function(l) {
+        var opt = document.createElement('option');
+        opt.value = l.id;
+        opt.textContent = l.name + ' (' + l.id + ')';
+        if (preselectedLocId && l.id === preselectedLocId) opt.selected = true;
+        select.appendChild(opt);
+      });
+      openModal('newIssueModal');
+    }
+
+    // إدارة الصلاحيات عبر الأرقام السرية
+    function verifyPin() {
+      var pin = document.getElementById('pinInput').value;
+      if (pin === '1111') {
+        appState.role = 'مفتش';
+        document.getElementById('roleBadge').textContent = 'المفتش (1111)';
+        showToast('تم الدخول بصلاحية: مفتش');
+      } else if (pin === '2222') {
+        appState.role = 'فني';
+        document.getElementById('roleBadge').textContent = 'فني صيانة (2222)';
+        showToast('تم الدخول بصلاحية: فني صيانة');
+      } else if (pin === '3333' || pin === '9999') {
+        appState.role = 'إدارة';
+        document.getElementById('roleBadge').textContent = 'إدارة المجمع (3333)';
+        showToast('تم الدخول بصلاحية: الإدارة العامة');
+      } else {
+        alert('الرمز السري غير صحيح!');
+        return;
+      }
+      closeModal('pinModal');
+      document.getElementById('pinInput').value = '';
+    }
+
+    // محاكاة المسح بالكاميرا للتفتيش
+    function simulateScan() {
+      var randomLoc = DEFAULT_LOCATIONS[Math.floor(Math.random() * DEFAULT_LOCATIONS.length)];
+      var log = document.getElementById('inspectionLog');
+      var item = document.createElement('div');
+      item.className = 'p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-xs flex justify-between items-center';
+      item.innerHTML = 
+        '<span class="font-bold text-emerald-900"><i class="fa-solid fa-qrcode ml-1.5 text-emerald-600"></i> تم مسح وقفل: ' + randomLoc.name + '</span>' +
+        '<span class="text-slate-400">' + new Date().toLocaleTimeString('ar-AE', { hour: '2-digit', minute: '2-digit' }) + '</span>';
+      log.prepend(item);
+      showToast('تم توثيق مسح القاعة بنجاح');
+    }
+
+    // دوال النوافذ والإشعارات
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+    function showToast(msg) {
+      var toast = document.getElementById('toast');
+      document.getElementById('toastMsg').textContent = msg;
+      toast.classList.remove('hidden');
+      toast.classList.add('flex');
+      setTimeout(function() {
+        toast.classList.add('hidden');
+        toast.classList.remove('flex');
+      }, 2500);
+    }
+
+    // بدء التشغيل
+    window.addEventListener('DOMContentLoaded', function() {
+      updateDashboard();
+      renderBlueprint();
+    });
+  </script>
 </body>
-  </html>
+</html>
