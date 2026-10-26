@@ -5,194 +5,210 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>مجمع زايد التعليمي - إدارة المرافق</title>
   
-  <!-- الخطوط والأيقونات والتنسيق -->
+  <!-- الخطوط والأيقونات -->
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- مكتبة Supabase -->
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     * { font-family: 'Tajawal', sans-serif; -webkit-tap-highlight-color: transparent; }
-    body { background-color: #F8FAFC; color: #0F172A; overscroll-behavior-y: none; padding-bottom: env(safe-area-inset-bottom); }
+    body { background-color: #F8FAFC; color: #0F172A; }
     
-    /* للتحكم بالتبويبات */
-    .tab-content { display: none; }
-    .tab-content.active-tab { display: block; animation: fadeIn 0.2s ease-in-out; }
+    /* للتحكم بالتبويبات بشكل قاطع */
+    .tab-content { display: none !important; }
+    .tab-content.active-tab { display: block !important; animation: fadeIn 0.2s ease-in-out; }
     
     @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* المخطط الهندسي */
-    .blueprint-container { position: relative; width: 100%; max-width: 500px; margin: 0 auto; aspect-ratio: 400 / 460; background-color: #0F172A; border-radius: 8px; border: 2px solid #0284C7; overflow: hidden; }
-    .zone-item { position: absolute; border-radius: 4px; border: 1px solid #0284C7; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; cursor: pointer; transition: transform 0.1s; padding: 2px; }
-    .zone-item:active { transform: scale(0.95); }
-    .zone-badge { position: absolute; top: 0; right: 0; transform: translate(30%, -30%); background: #EF4444; color: white; font-size: 9px; font-weight: bold; padding: 2px 5px; border-radius: 10px; z-index: 10; }
+    /* المخطط الهندسي التفاعلي */
+    .blueprint-container { position: relative; width: 100%; max-width: 500px; margin: 0 auto; aspect-ratio: 400 / 460; background-color: #0F172A; border-radius: 12px; border: 2px solid #0284C7; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .zone-item { position: absolute; border-radius: 4px; border: 1px solid #0284C7; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; cursor: pointer; transition: all 0.1s; padding: 1px; }
+    .zone-item:active { transform: scale(0.95); opacity: 0.8; }
+    .zone-badge { position: absolute; top: 0; right: 0; transform: translate(30%, -30%); background: #EF4444; color: white; font-size: 9px; font-weight: bold; padding: 2px 5px; border-radius: 10px; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    
+    /* أزرار التبويبات السفلية */
+    .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 0; color: #94A3B8; transition: all 0.2s; }
+    .nav-btn.active { color: #0284C7; border-top: 3px solid #0284C7; background-color: #F0F9FF; }
     
     /* اللودر */
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     .loader { border: 3px solid #f3f3f3; border-top: 3px solid #0284C7; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
-    
-    /* شاشة الطباعة */
-    @media print {
-      body * { visibility: hidden; }
-      #print-area, #print-area * { visibility: visible; }
-      #print-area { position: absolute; left: 0; top: 0; width: 100%; }
-      .no-print { display: none !important; }
-    }
   </style>
 </head>
-<body class="flex flex-col min-h-screen">
+<body class="flex flex-col min-h-screen overflow-hidden">
 
   <!-- ================= شاشة تسجيل الدخول ================= -->
-  <div id="login-screen" class="fixed inset-0 bg-slate-50 z-50 overflow-y-auto">
+  <div id="login-screen" class="fixed inset-0 bg-slate-50 z-50 overflow-y-auto block">
     <div class="bg-slate-900 p-8 rounded-b-[2rem] text-center shadow-lg relative">
-      <i class="fa-solid fa-business-time text-white text-5xl mb-4 mt-4"></i>
+      <i class="fa-solid fa-building-shield text-white text-5xl mb-4 mt-4"></i>
       <h1 class="text-white text-2xl font-extrabold">مجمع زايد التعليمي</h1>
       <p class="text-slate-300 text-xs mt-2">المخطط الهندسي الذكي وإدارة المرافق</p>
     </div>
     
-    <div class="p-5 max-w-md mx-auto mt-2">
-      <p class="font-bold text-slate-700 text-sm mb-4">اختر البوابة للدخول بالرمز السري:</p>
+    <div class="p-5 max-w-md mx-auto mt-2 space-y-4">
+      <p class="font-bold text-slate-700 text-sm mb-2">اختر البوابة للدخول بالرمز السري:</p>
       
       <!-- مفتش -->
-      <div data-action="open-login" data-role="inspector" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 mb-3 cursor-pointer hover:border-sky-500 transition">
-        <i class="fa-solid fa-search text-sky-600 text-2xl"></i>
-        <div class="flex-1">
-          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">مفتش صيانة <i class="fa-solid fa-lock text-[10px] text-slate-400"></i></h3>
-          <p class="text-[11px] text-slate-500 mt-1">تسجيل البلاغات وتصوير الأعطال المباشرة</p>
+      <div onclick="window.openLoginPin('inspector')" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 cursor-pointer active:bg-slate-50">
+        <div class="w-12 h-12 rounded-full bg-sky-50 flex items-center justify-center">
+          <i class="fa-solid fa-search text-sky-600 text-xl"></i>
         </div>
-        <i class="fa-solid fa-chevron-left text-slate-300 text-sm"></i>
+        <div class="flex-1">
+          <h3 class="font-bold text-slate-800 text-sm">مفتش صيانة <i class="fa-solid fa-lock text-[10px] text-slate-400 ml-1"></i></h3>
+          <p class="text-[11px] text-slate-500 mt-1">تسجيل البلاغات وتصوير الأعطال</p>
+        </div>
+        <i class="fa-solid fa-chevron-left text-slate-300"></i>
       </div>
 
       <!-- فني / تسوية -->
-      <div data-action="open-login" data-role="worker" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 mb-3 cursor-pointer hover:border-amber-500 transition">
-        <i class="fa-solid fa-screwdriver-wrench text-amber-500 text-2xl"></i>
-        <div class="flex-1">
-          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">بوابة تسوية الأعطال <i class="fa-solid fa-lock text-[10px] text-slate-400"></i></h3>
-          <p class="text-[11px] text-slate-500 mt-1">استلام المهام، وتصوير الإنجاز</p>
+      <div onclick="window.openLoginPin('worker')" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 cursor-pointer active:bg-slate-50">
+        <div class="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center">
+          <i class="fa-solid fa-screwdriver-wrench text-amber-500 text-xl"></i>
         </div>
-        <i class="fa-solid fa-chevron-left text-slate-300 text-sm"></i>
+        <div class="flex-1">
+          <h3 class="font-bold text-slate-800 text-sm">بوابة تسوية الأعطال <i class="fa-solid fa-lock text-[10px] text-slate-400 ml-1"></i></h3>
+          <p class="text-[11px] text-slate-500 mt-1">استلام المهام وتصوير الإنجاز</p>
+        </div>
+        <i class="fa-solid fa-chevron-left text-slate-300"></i>
       </div>
 
       <!-- مشرف -->
-      <div data-action="open-login" data-role="supervisor" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 mb-3 cursor-pointer hover:border-emerald-500 transition">
-        <i class="fa-solid fa-eye text-emerald-500 text-2xl"></i>
+      <div onclick="window.openLoginPin('supervisor')" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 cursor-pointer active:bg-slate-50">
+        <div class="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center">
+          <i class="fa-solid fa-eye text-emerald-500 text-xl"></i>
+        </div>
         <div class="flex-1">
-          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">مشرف / إدارة المجمع <i class="fa-solid fa-lock text-[10px] text-slate-400"></i></h3>
+          <h3 class="font-bold text-slate-800 text-sm">مشرف / إدارة المجمع <i class="fa-solid fa-lock text-[10px] text-slate-400 ml-1"></i></h3>
           <p class="text-[11px] text-slate-500 mt-1">المتابعة الحية وسحب التقارير</p>
         </div>
-        <i class="fa-solid fa-chevron-left text-slate-300 text-sm"></i>
+        <i class="fa-solid fa-chevron-left text-slate-300"></i>
       </div>
     </div>
   </div>
 
   <!-- نافذة إدخال الرقم السري -->
-  <div id="pin-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden items-center justify-center p-4">
-    <div class="bg-white rounded-2xl w-full max-w-xs p-6 text-center shadow-xl">
+  <div id="pin-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden flex-col items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-xs p-6 text-center shadow-xl transform transition-all">
       <div class="w-12 h-12 mx-auto rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xl mb-4">
         <i class="fa-solid fa-lock"></i>
       </div>
-      <h3 id="pin-role-title" class="font-bold text-slate-800 mb-1">تسجيل الدخول</h3>
-      <p class="text-xs text-slate-500 mb-4">يرجى إدخال الرقم السري المعتمد للمتابعة</p>
+      <h3 id="pin-role-title" class="font-bold text-slate-800 mb-1 text-lg">تسجيل الدخول</h3>
+      <p class="text-xs text-slate-500 mb-5">يرجى إدخال الرقم السري المعتمد للمتابعة</p>
       
-      <input type="password" id="pin-input" maxlength="6" class="w-full text-center tracking-[0.5em] text-xl font-bold p-3 bg-slate-100 border border-slate-300 rounded-xl focus:border-sky-600 focus:outline-none mb-4" placeholder="••••" dir="ltr">
+      <input type="password" id="pin-input" maxlength="6" class="w-full text-center tracking-[0.5em] text-2xl font-bold p-3 bg-slate-50 border border-slate-300 rounded-xl focus:border-sky-500 focus:ring-2 focus:ring-sky-200 outline-none mb-5" placeholder="••••" dir="ltr">
       
-      <button id="btn-verify-login" class="w-full py-3 bg-sky-700 text-white font-bold text-sm rounded-xl shadow hover:bg-sky-800 mb-2 transition">تأكيد الدخول</button>
-      <button id="btn-close-login" class="w-full py-3 bg-slate-100 text-slate-600 font-bold text-sm rounded-xl hover:bg-slate-200 transition">إلغاء</button>
+      <button onclick="window.verifyLogin()" class="w-full py-3.5 bg-sky-600 text-white font-bold text-sm rounded-xl shadow-md hover:bg-sky-700 active:scale-95 transition mb-3">تأكيد الدخول</button>
+      <button onclick="window.closeModal('pin-modal')" class="w-full py-3 bg-slate-100 text-slate-600 font-bold text-sm rounded-xl hover:bg-slate-200 active:scale-95 transition">إلغاء</button>
     </div>
   </div>
 
   <!-- ================= التطبيق الرئيسي ================= -->
-  <div id="main-app" class="hidden flex-col h-screen">
+  <div id="main-app" class="hidden flex-col h-screen w-full">
     
     <!-- الشريط العلوي -->
-    <header class="bg-slate-900 text-white p-4 shadow-md sticky top-0 z-40 no-print">
-      <div class="max-w-md mx-auto flex justify-between items-center">
-        <div>
-          <p class="text-xs text-slate-400">مرحباً بك في المنظومة</p>
-          <h2 id="user-name-display" class="font-bold text-sm">مستخدم</h2>
-          <span id="user-role-badge" class="text-[10px] text-amber-400 font-bold">صلاحية</span>
-        </div>
+    <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-40">
+      <div class="max-w-xl mx-auto px-4 py-3 flex justify-between items-center">
         <div class="flex items-center gap-3">
-          <button id="btn-refresh" class="p-2 bg-white/10 rounded-lg text-white hover:bg-white/20 transition">
+          <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+            <i class="fa-solid fa-user-shield text-lg text-sky-300"></i>
+          </div>
+          <div>
+            <h2 id="user-name-display" class="font-bold text-sm">مستخدم</h2>
+            <span id="user-role-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-800 text-sky-200 mt-1 inline-block">صلاحية</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="window.refreshData()" class="w-9 h-9 flex items-center justify-center bg-white/10 rounded-lg text-white hover:bg-white/20 active:scale-95 transition">
             <i class="fa-solid fa-sync-alt" id="sync-icon"></i>
           </button>
-          <button id="btn-logout" class="p-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/40 transition">
+          <button onclick="window.logout()" class="w-9 h-9 flex items-center justify-center bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/40 active:scale-95 transition">
             <i class="fa-solid fa-right-from-bracket"></i>
           </button>
         </div>
       </div>
     </header>
 
-    <!-- المحتوى -->
-    <main class="flex-1 overflow-y-auto pb-20 no-print" id="main-scroll">
-      <div class="max-w-md mx-auto p-4">
+    <!-- منطقة المحتوى (تتغير حسب التبويب) -->
+    <main class="flex-1 overflow-y-auto pb-20 bg-slate-50 w-full">
+      <div class="max-w-xl mx-auto p-4 w-full">
 
-        <!-- تبويب الرئيسية -->
-        <div id="tab-home" class="tab-content active-tab">
-          <!-- الإحصائيات -->
-          <div class="grid grid-cols-2 gap-3 mb-6">
-            <div class="bg-sky-50 p-4 rounded-xl border border-sky-100 flex flex-col items-center">
-              <i class="fa-solid fa-layer-group text-sky-600 text-xl mb-1"></i>
-              <span id="stat-total" class="font-extrabold text-xl text-slate-800">0</span>
-              <span class="text-[10px] font-bold text-slate-500">إجمالي البلاغات</span>
+        <!-- ===== 1. الرئيسية ===== -->
+        <div id="tab-home" class="tab-content active-tab space-y-5">
+          
+          <!-- بطاقة الإحصائيات -->
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+            <h3 class="font-bold text-slate-800 text-sm mb-3 border-b pb-2 border-slate-100"><i class="fa-solid fa-chart-pie text-sky-600 ml-1"></i> ملخص الإنجاز</h3>
+            
+            <div class="grid grid-cols-2 gap-3 mb-4">
+              <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center text-sky-600"><i class="fa-solid fa-list-check"></i></div>
+                <div>
+                  <div id="stat-total" class="font-extrabold text-xl text-slate-800">0</div>
+                  <div class="text-[10px] font-bold text-slate-500">إجمالي البلاغات</div>
+                </div>
+              </div>
+              <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600"><i class="fa-solid fa-check-double"></i></div>
+                <div>
+                  <div id="stat-completed" class="font-extrabold text-xl text-slate-800">0</div>
+                  <div class="text-[10px] font-bold text-slate-500">تمت التسوية</div>
+                </div>
+              </div>
+              <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-500"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <div>
+                  <div id="stat-new" class="font-extrabold text-xl text-slate-800">0</div>
+                  <div class="text-[10px] font-bold text-slate-500">بلاغات جديدة</div>
+                </div>
+              </div>
+              <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600"><i class="fa-solid fa-hammer"></i></div>
+                <div>
+                  <div id="stat-progress" class="font-extrabold text-xl text-slate-800">0</div>
+                  <div class="text-[10px] font-bold text-slate-500">قيد العمل</div>
+                </div>
+              </div>
             </div>
-            <div class="bg-red-50 p-4 rounded-xl border border-red-100 flex flex-col items-center">
-              <i class="fa-solid fa-circle-exclamation text-red-500 text-xl mb-1"></i>
-              <span id="stat-new" class="font-extrabold text-xl text-slate-800">0</span>
-              <span class="text-[10px] font-bold text-slate-500">مفتوحة (جديدة)</span>
-            </div>
-            <div class="bg-amber-50 p-4 rounded-xl border border-amber-100 flex flex-col items-center">
-              <i class="fa-solid fa-hammer text-amber-600 text-xl mb-1"></i>
-              <span id="stat-progress" class="font-extrabold text-xl text-slate-800">0</span>
-              <span class="text-[10px] font-bold text-slate-500">قيد العمل</span>
-            </div>
-            <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100 flex flex-col items-center">
-              <i class="fa-solid fa-check-double text-emerald-600 text-xl mb-1"></i>
-              <span id="stat-completed" class="font-extrabold text-xl text-slate-800">0</span>
-              <span class="text-[10px] font-bold text-slate-500">تمت التسوية</span>
+
+            <!-- شريط النسبة المئوية -->
+            <div>
+              <div class="flex justify-between text-xs font-bold mb-1.5">
+                <span class="text-slate-600">نسبة إنجاز وتسوية الأعطال</span>
+                <span id="completion-rate-text" class="text-emerald-600">0%</span>
+              </div>
+              <div class="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                <div id="completion-rate-bar" class="h-full bg-emerald-500 transition-all duration-700 ease-out" style="width: 0%"></div>
+              </div>
             </div>
           </div>
 
-          <!-- شريط الإنجاز -->
-          <div class="mb-6 px-2">
-            <div class="flex justify-between text-xs font-bold mb-1">
-              <span class="text-slate-700">نسبة إنجاز وتسوية الأعطال</span>
-              <span id="completion-rate-text" class="text-emerald-600">0%</span>
-            </div>
-            <div class="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
-              <div id="completion-rate-bar" class="h-full bg-emerald-500 transition-all duration-500" style="width: 0%"></div>
-            </div>
-          </div>
-
-          <!-- الإجراءات السريعة -->
+          <!-- أزرار الإجراءات السريعة -->
           <div class="space-y-3">
-            <button class="tab-btn w-full bg-white p-3 rounded-xl border border-slate-200 flex items-center gap-3 shadow-sm hover:border-sky-500" data-target="map">
-              <i class="fa-solid fa-map-location-dot text-sky-600 text-lg"></i>
-              <span class="flex-1 text-right font-bold text-sm text-slate-700">المخطط الهندسي التفاعلي</span>
-              <i class="fa-solid fa-chevron-left text-slate-400 text-xs"></i>
+            <button onclick="window.switchTab('map')" class="w-full bg-sky-600 text-white p-4 rounded-xl flex items-center gap-3 shadow-md hover:bg-sky-700 active:scale-95 transition">
+              <i class="fa-solid fa-map-location-dot text-xl"></i>
+              <span class="flex-1 text-right font-bold text-sm">المخطط الهندسي (تسجيل بلاغ)</span>
+              <i class="fa-solid fa-chevron-left text-sky-200"></i>
             </button>
-            <button class="tab-btn w-full bg-white p-3 rounded-xl border border-slate-200 flex items-center gap-3 shadow-sm hover:border-sky-500" data-target="faults">
-              <i class="fa-solid fa-clipboard-list text-slate-800 text-lg"></i>
-              <span class="flex-1 text-right font-bold text-sm text-slate-700">سجل الأعطال والتسويات</span>
-              <i class="fa-solid fa-chevron-left text-slate-400 text-xs"></i>
-            </button>
-            <button id="btn-export-pdf" class="w-full bg-sky-50 p-3 rounded-xl border border-sky-200 flex items-center gap-3 shadow-sm hover:bg-sky-100">
-              <i class="fa-solid fa-file-pdf text-sky-600 text-lg"></i>
-              <span class="flex-1 text-right font-bold text-sm text-sky-700">تصدير تقرير شامل (PDF)</span>
-              <i class="fa-solid fa-download text-sky-600 text-xs"></i>
+            <button onclick="window.switchTab('faults')" class="w-full bg-white text-slate-800 p-4 rounded-xl border border-slate-200 flex items-center gap-3 shadow-sm hover:border-slate-300 active:scale-95 transition">
+              <i class="fa-solid fa-clipboard-list text-xl text-slate-600"></i>
+              <span class="flex-1 text-right font-bold text-sm">سجل الأعطال والتسويات</span>
+              <i class="fa-solid fa-chevron-left text-slate-300"></i>
             </button>
           </div>
         </div>
 
-        <!-- تبويب المخطط الهندسي -->
-        <div id="tab-map" class="tab-content">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="font-bold text-slate-800">مخطط المجمع</h2>
-            <div class="flex bg-slate-200 rounded-lg p-1 text-xs font-bold">
-              <button id="btn-floor-ground" class="floor-btn px-3 py-1.5 rounded bg-white text-sky-700 shadow-sm transition" data-floor="ground">الأرضي</button>
-              <button id="btn-floor-upper" class="floor-btn px-3 py-1.5 rounded text-slate-500 transition" data-floor="upper">العلوي</button>
+        <!-- ===== 2. المخطط الهندسي ===== -->
+        <div id="tab-map" class="tab-content space-y-4">
+          <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-slate-200">
+            <h2 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-map text-sky-600 ml-1"></i> مخطط المجمع</h2>
+            <div class="flex bg-slate-100 rounded-lg p-1 text-xs font-bold border border-slate-200">
+              <button id="btn-floor-ground" onclick="window.setFloor('ground')" class="px-4 py-1.5 rounded-md bg-white text-sky-700 shadow-sm transition">الأرضي</button>
+              <button id="btn-floor-upper" onclick="window.setFloor('upper')" class="px-4 py-1.5 rounded-md text-slate-500 hover:text-slate-800 transition">العلوي</button>
             </div>
           </div>
 
@@ -200,22 +216,17 @@
           <div class="blueprint-container" id="blueprint-map">
             <!-- يتم حقن الغرف هنا عبر JS -->
           </div>
-
-          <p class="text-[10px] text-center text-slate-500 mt-2 font-bold"><i class="fa-solid fa-info-circle"></i> اضغط على الغرفة لإدارة الأعطال الخاصة بها</p>
+          <p class="text-[11px] text-center text-slate-500 font-bold bg-white py-2 rounded-lg border border-slate-200"><i class="fa-solid fa-hand-pointer text-sky-500 ml-1"></i> اضغط على المرفق لإدارة الأعطال وتسجيلها</p>
         </div>
 
-        <!-- تبويب سجل الأعطال -->
-        <div id="tab-faults" class="tab-content">
-          <div class="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
-            <button class="filter-btn px-4 py-1.5 rounded-full text-xs font-bold bg-sky-600 text-white whitespace-nowrap" data-filter="all">الكل</button>
-            <button class="filter-btn px-4 py-1.5 rounded-full text-xs font-bold bg-slate-200 text-slate-600 whitespace-nowrap" data-filter="new">جديد</button>
-            <button class="filter-btn px-4 py-1.5 rounded-full text-xs font-bold bg-slate-200 text-slate-600 whitespace-nowrap" data-filter="in_progress">قيد العمل</button>
-            <button class="filter-btn px-4 py-1.5 rounded-full text-xs font-bold bg-slate-200 text-slate-600 whitespace-nowrap" data-filter="completed">مكتمل</button>
-          </div>
-
-          <div class="relative mb-4">
-            <i class="fa-solid fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
-            <input type="text" id="search-input" placeholder="بحث باسم المرفق أو المفتش..." class="w-full bg-white border border-slate-300 pl-3 pr-9 py-2 rounded-xl text-xs focus:outline-none focus:border-sky-500">
+        <!-- ===== 3. سجل الأعطال ===== -->
+        <div id="tab-faults" class="tab-content space-y-4">
+          <!-- أزرار الفلترة -->
+          <div class="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+            <button id="flt-all" onclick="window.setFilter('all')" class="px-5 py-2 rounded-full text-xs font-bold bg-sky-600 text-white whitespace-nowrap shadow-sm">الكل</button>
+            <button id="flt-new" onclick="window.setFilter('new')" class="px-5 py-2 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-600 whitespace-nowrap shadow-sm">جديد</button>
+            <button id="flt-in_progress" onclick="window.setFilter('in_progress')" class="px-5 py-2 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-600 whitespace-nowrap shadow-sm">قيد العمل</button>
+            <button id="flt-completed" onclick="window.setFilter('completed')" class="px-5 py-2 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-600 whitespace-nowrap shadow-sm">مكتمل</button>
           </div>
 
           <div id="faults-list" class="space-y-3">
@@ -223,23 +234,35 @@
           </div>
         </div>
 
+        <!-- ===== 4. المواقع (قائمة عرض فقط) ===== -->
+        <div id="tab-locations" class="tab-content space-y-3">
+          <h2 class="font-bold text-slate-800 text-sm mb-2"><i class="fa-solid fa-list-ul text-sky-600 ml-1"></i> دليل المرافق والغرف</h2>
+          <div id="locations-list" class="bg-white rounded-xl shadow-sm border border-slate-200 divide-y divide-slate-100 overflow-hidden">
+            <!-- يتم حقن المواقع هنا -->
+          </div>
+        </div>
+
       </div>
     </main>
 
-    <!-- الشريط السفلي (Bottom Navigation) -->
-    <nav class="bg-white border-t border-slate-200 fixed bottom-0 w-full z-40 pb-[env(safe-area-inset-bottom)] no-print">
-      <div class="max-w-md mx-auto flex justify-around p-2">
-        <button class="tab-btn nav-icon flex flex-col items-center w-16 text-sky-600 transition" data-target="home">
+    <!-- الشريط السفلي (Bottom Navigation) ثابت ومحمي -->
+    <nav class="bg-white border-t border-slate-200 fixed bottom-0 w-full z-40 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <div class="max-w-xl mx-auto flex justify-between">
+        <button id="nav-home" onclick="window.switchTab('home')" class="nav-btn active">
           <i class="fa-solid fa-house text-lg mb-1 pointer-events-none"></i>
           <span class="text-[10px] font-bold pointer-events-none">الرئيسية</span>
         </button>
-        <button class="tab-btn nav-icon flex flex-col items-center w-16 text-slate-400 hover:text-sky-600 transition" data-target="map">
+        <button id="nav-map" onclick="window.switchTab('map')" class="nav-btn">
           <i class="fa-solid fa-map text-lg mb-1 pointer-events-none"></i>
           <span class="text-[10px] font-bold pointer-events-none">المخطط</span>
         </button>
-        <button class="tab-btn nav-icon flex flex-col items-center w-16 text-slate-400 hover:text-sky-600 transition" data-target="faults">
-          <i class="fa-solid fa-clipboard-check text-lg mb-1 pointer-events-none"></i>
+        <button id="nav-faults" onclick="window.switchTab('faults')" class="nav-btn">
+          <i class="fa-solid fa-clipboard-list text-lg mb-1 pointer-events-none"></i>
           <span class="text-[10px] font-bold pointer-events-none">الأعطال</span>
+        </button>
+        <button id="nav-locations" onclick="window.switchTab('locations')" class="nav-btn">
+          <i class="fa-solid fa-location-dot text-lg mb-1 pointer-events-none"></i>
+          <span class="text-[10px] font-bold pointer-events-none">المرافق</span>
         </button>
       </div>
     </nav>
@@ -247,505 +270,429 @@
 
   <!-- ================= النوافذ المنبثقة (Modals) ================= -->
   
-  <!-- نافذة إضافة بلاغ جديد -->
-  <div id="new-fault-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] hidden items-center justify-center p-4 no-print">
-    <div class="bg-white rounded-2xl w-full max-w-sm max-h-[90vh] overflow-hidden flex flex-col shadow-xl">
-      <div class="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-        <h3 class="font-bold text-slate-800 text-sm">تسجيل بلاغ - <span id="nf-loc-name" class="text-sky-600"></span></h3>
-        <button id="btn-close-new-fault" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark text-lg"></i></button>
+  <!-- 1. نافذة بلاغ جديد -->
+  <div id="new-fault-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[70] hidden flex-col items-center justify-end sm:justify-center p-0 sm:p-4">
+    <div class="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-[fadeIn_0.3s_ease-out]">
+      <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+        <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-circle-plus text-sky-600"></i> تسجيل بلاغ</h3>
+        <button onclick="window.closeModal('new-fault-modal')" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 transition"><i class="fa-solid fa-xmark"></i></button>
       </div>
-      <div class="p-4 overflow-y-auto flex-1 space-y-4">
+      <div class="p-5 overflow-y-auto flex-1 space-y-5">
         
+        <!-- اسم الغرفة -->
+        <div class="bg-sky-50 border border-sky-100 p-3 rounded-xl flex items-center gap-3">
+          <i class="fa-solid fa-location-dot text-sky-600 text-lg"></i>
+          <div>
+            <p class="text-[10px] text-sky-800 font-bold">الموقع المحدد:</p>
+            <p id="nf-loc-name" class="font-extrabold text-sm text-sky-950"></p>
+          </div>
+        </div>
+
+        <!-- أداة الكاميرا -->
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">صورة العطل المباشرة <span class="text-red-500">*</span></label>
-          <div id="nf-photo-trigger" class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center cursor-pointer bg-slate-50 hover:bg-slate-100 transition relative overflow-hidden">
-            <input type="file" id="nf-photo" accept="image/*" capture="environment" class="hidden">
-            <img id="nf-preview" src="" class="hidden w-full h-32 object-cover rounded-lg mb-2">
-            <div id="nf-placeholder">
-              <i class="fa-solid fa-camera text-2xl text-sky-600 mb-1"></i>
-              <p class="text-xs text-slate-500 font-bold">التقط صورة للعطل</p>
+          <label class="block text-xs font-bold text-slate-700 mb-2">التقط صورة العطل (مطلوب) <span class="text-red-500">*</span></label>
+          <div class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center cursor-pointer bg-slate-50 hover:bg-slate-100 transition relative overflow-hidden flex flex-col items-center justify-center min-h-[140px]" onclick="document.getElementById('nf-photo').click()">
+            <input type="file" id="nf-photo" accept="image/*" capture="environment" class="hidden" onchange="window.processImage(this, 'nf-preview')">
+            <img id="nf-preview" src="" class="hidden absolute inset-0 w-full h-full object-cover">
+            <div id="nf-placeholder" class="pointer-events-none">
+              <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm mx-auto mb-2 text-sky-600"><i class="fa-solid fa-camera text-xl"></i></div>
+              <p class="text-xs text-slate-600 font-bold">اضغط لفتح الكاميرا والتقاط الصورة</p>
             </div>
-            <!-- مؤشر رفع -->
-            <div id="nf-uploading" class="hidden absolute inset-0 bg-white/80 flex-col items-center justify-center">
+            <!-- مؤشر المعالجة -->
+            <div id="nf-uploading" class="hidden absolute inset-0 bg-white/90 flex-col items-center justify-center backdrop-blur-sm pointer-events-none">
               <div class="loader mb-2"></div>
-              <span class="text-[10px] font-bold text-sky-700">جاري المعالجة...</span>
+              <span class="text-xs font-bold text-sky-700">جاري معالجة ورفع الصورة...</span>
             </div>
           </div>
         </div>
 
+        <!-- التصنيف والأولوية -->
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">تصنيف العطل</label>
-            <select id="nf-type" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold outline-none focus:border-sky-500">
-              <option value="تكييف وتبريد">تكييف وتبريد</option>
-              <option value="كهرباء وإنارة">كهرباء وإنارة</option>
-              <option value="سباكة ومياه">سباكة ومياه</option>
-              <option value="أثاث ومقاعد">أثاث ومقاعد</option>
-              <option value="أجهزة ومعدات">أجهزة ومعدات</option>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">تصنيف العطل</label>
+            <select id="nf-type" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-sky-500 focus:bg-white transition">
+              <option value="تكييف وتبريد">تكييف وتبريد ❄️</option>
+              <option value="كهرباء وإنارة">كهرباء وإنارة ⚡</option>
+              <option value="سباكة ومياه">سباكة ومياه 🚰</option>
+              <option value="أثاث ومقاعد">أثاث ومقاعد 🪑</option>
+              <option value="أجهزة ومعدات">أجهزة ومعدات 💻</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">الأولوية</label>
-            <select id="nf-priority" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold outline-none focus:border-sky-500">
-              <option value="high">طارئ</option>
-              <option value="medium" selected>متوسط</option>
-              <option value="low">عادي</option>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">الأولوية</label>
+            <select id="nf-priority" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-sky-500 focus:bg-white transition">
+              <option value="high">طارئ 🔴</option>
+              <option value="medium" selected>متوسط 🟡</option>
+              <option value="low">عادي 🟢</option>
             </select>
           </div>
         </div>
 
+        <!-- ملاحظات -->
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">ملاحظات العطل</label>
-          <textarea id="nf-note" rows="3" class="w-full p-3 bg-white border border-slate-300 rounded-xl text-xs outline-none focus:border-sky-500" placeholder="اكتب تفاصيل إضافية..."></textarea>
+          <label class="block text-[11px] font-bold text-slate-700 mb-1">وصف العطل (اختياري)</label>
+          <textarea id="nf-note" rows="2" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-sky-500 focus:bg-white transition" placeholder="اكتب أي ملاحظات إضافية للفني..."></textarea>
         </div>
 
-        <button id="btn-submit-fault" class="w-full py-3 bg-sky-600 text-white rounded-xl font-bold text-sm shadow-md hover:bg-sky-700 transition">
-          حفظ وإرسال البلاغ فوراً
+        <button id="btn-submit-fault" onclick="window.submitFault()" class="w-full py-4 bg-sky-600 text-white rounded-xl font-bold text-sm shadow-md shadow-sky-600/30 hover:bg-sky-700 active:scale-95 transition flex justify-center items-center gap-2">
+          <i class="fa-solid fa-paper-plane"></i> حفظ وإرسال البلاغ
         </button>
-
       </div>
     </div>
   </div>
 
-  <!-- نافذة عرض تفاصيل البلاغ وتسويته -->
-  <div id="view-fault-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] hidden items-center justify-center p-4 no-print">
-    <div class="bg-white rounded-2xl w-full max-w-sm max-h-[90vh] flex flex-col shadow-xl overflow-hidden">
-      <div class="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-        <div>
-          <h3 class="font-bold text-slate-800 text-sm">تفاصيل البلاغ <span id="vf-id" class="text-sky-600"></span></h3>
-        </div>
-        <button id="btn-close-view-fault" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark text-lg"></i></button>
+  <!-- 2. نافذة عرض تفاصيل البلاغ (للعمال والمشرفين) -->
+  <div id="view-fault-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[70] hidden flex-col items-center justify-end sm:justify-center p-0 sm:p-4">
+    <div class="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-[fadeIn_0.3s_ease-out]">
+      <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+        <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">تفاصيل العطل <span id="vf-id" class="text-sky-600 ml-1"></span></h3>
+        <button onclick="window.closeModal('view-fault-modal')" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 transition"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="p-4 overflow-y-auto flex-1 space-y-4">
         
-        <div>
-          <p class="text-xs text-slate-500 mb-1">الموقع:</p>
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <p class="text-[10px] text-slate-500 mb-1">الموقع:</p>
           <p id="vf-loc" class="font-bold text-sm text-slate-800"></p>
         </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <p class="text-xs text-slate-500">التصنيف:</p>
+        
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <p class="text-[10px] text-slate-500 mb-1">التصنيف:</p>
             <p id="vf-type" class="font-bold text-xs"></p>
           </div>
-          <div>
-            <p class="text-xs text-slate-500">المفتش:</p>
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <p class="text-[10px] text-slate-500 mb-1">المفتش:</p>
             <p id="vf-reporter" class="font-bold text-xs"></p>
           </div>
         </div>
         
         <div>
-          <p class="text-[10px] font-bold text-slate-500 mb-1">صورة العطل (قبل الإصلاح)</p>
-          <img id="vf-before-img" src="" class="w-full h-40 object-cover rounded-xl border border-slate-200 bg-slate-50">
+          <p class="text-[11px] font-bold text-slate-700 mb-2"><i class="fa-solid fa-image text-slate-400 ml-1"></i> صورة العطل قبل الإصلاح</p>
+          <img id="vf-before-img" src="" class="w-full h-48 object-cover rounded-xl border border-slate-200 bg-slate-100 shadow-sm">
         </div>
 
         <div id="vf-after-section" class="hidden">
-          <p class="text-[10px] font-bold text-slate-500 mb-1">صورة الإنجاز (بعد التسوية)</p>
-          <img id="vf-after-img" src="" class="w-full h-40 object-cover rounded-xl border border-slate-200 bg-slate-50">
+          <p class="text-[11px] font-bold text-slate-700 mb-2"><i class="fa-solid fa-image text-emerald-500 ml-1"></i> صورة بعد إنجاز التسوية</p>
+          <img id="vf-after-img" src="" class="w-full h-48 object-cover rounded-xl border border-emerald-200 bg-emerald-50 shadow-sm">
         </div>
 
-        <div id="vf-note-section" class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-          <p class="text-[10px] font-bold text-slate-500 mb-1">الملاحظات:</p>
-          <p id="vf-note" class="text-xs text-slate-700"></p>
+        <div id="vf-note-section" class="bg-amber-50 p-3 rounded-xl border border-amber-100">
+          <p class="text-[10px] font-bold text-amber-700 mb-1"><i class="fa-solid fa-note-sticky ml-1"></i> ملاحظات:</p>
+          <p id="vf-note" class="text-xs text-amber-900 leading-relaxed"></p>
         </div>
 
-        <!-- أزرار الإجراءات حسب الصلاحية -->
+        <!-- أزرار الإجراءات ديناميكية -->
         <div id="vf-actions" class="pt-2"></div>
 
       </div>
     </div>
   </div>
 
-  <!-- توست الإشعارات -->
-  <div id="toast" class="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-5 py-2.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 z-[100] transition-opacity duration-300 opacity-0 pointer-events-none">
-    <i id="toast-icon" class="fa-solid fa-circle-info text-sky-400"></i>
-    <span id="toast-msg">رسالة</span>
+  <!-- التوست (إشعارات منبثقة) -->
+  <div id="toast" class="fixed bottom-24 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-5 py-3 rounded-xl text-xs font-bold shadow-xl flex items-center gap-3 z-[100] transition-all duration-300 opacity-0 pointer-events-none translate-y-4">
+    <i id="toast-icon" class="fa-solid fa-circle-info text-sky-400 text-base"></i>
+    <span id="toast-msg">رسالة النظام</span>
   </div>
 
-  <!-- ================= منطقة الطباعة المخفية ================= -->
-  <div id="print-area" class="hidden bg-white p-8"></div>
-
-  <!-- ================= كود جافاسكريبت الموثوق ================= -->
+  <!-- ================= السكربت المدمج بشكل آمن (Global Scope) ================= -->
   <script>
-    // الإعدادات العامة والمتغيرات
-    const SUPABASE_URL = 'https://igapdxtttqgtdpxajszy.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_ytpvGSPA2fv402Qo4lBuQg_M_-0oXD8';
-    const PIN_CODES = { inspector: '1111', worker: '2222', supervisor: '3333' };
-    const PLAN_W = 400, PLAN_H = 460;
+    // 1. تعريف المتغيرات والثوابت العالمية لضمان الوصول من أي مكان في HTML
+    window.SUPABASE_URL = 'https://igapdxtttqgtdpxajszy.supabase.co';
+    window.SUPABASE_ANON_KEY = 'sb_publishable_ytpvGSPA2fv402Qo4lBuQg_M_-0oXD8';
+    window.PIN_CODES = { inspector: '1111', worker: '2222', supervisor: '3333' };
+    window.PLAN_W = 400; window.PLAN_H = 460;
+    
+    window.supabaseClient = null;
+    window.currentRole = '';
+    window.currentUser = null;
+    window.faultsData = [];
+    window.currentFloor = 'ground';
+    window.currentFilter = 'all';
+    window.selectedLocation = null;
+    window.activeFaultItem = null;
+    window.pendingUploadBase64 = null;
 
-    let supabase;
-    let currentUser = null; 
-    let faults = [];
-    let currentFloor = 'ground';
-    let currentFilter = 'all';
-    let currentSearch = '';
-    let selectedLocation = null;
-    let activeFaultItem = null;
-    let pendingUploadBase64 = null;
-
-    // بيانات المرافق كاملة
-    const ZONES = {
+    // 2. إحداثيات المخطط الهندسي كاملة من ملفك الأصلي
+    window.ZONES = {
       ground: [
-        { key: 'g_c5_sup_top', name_ar: 'إشراف ومخزن الخامس', wing: 'جناح الصف الخامس', x: 6, y: 14, w: 14, h: 32, icon: 'fa-box', color: '#E2E8F0' },
-        { key: 'g_c5_4', name_ar: 'صف الخامس 4', wing: 'جناح الصف الخامس', x: 22, y: 14, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FEF08A' },
-        { key: 'g_c5_5', name_ar: 'صف الخامس 5', wing: 'جناح الصف الخامس', x: 44, y: 14, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FEF08A' },
-        { key: 'g_c5_6', name_ar: 'صف الخامس 6', wing: 'جناح الصف الخامس', x: 66, y: 14, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FEF08A' },
-        { key: 'g_c5_admin', name_ar: 'إدارة جناح الخامس', wing: 'جناح الصف الخامس', x: 88, y: 14, w: 24, h: 32, icon: 'fa-briefcase', color: '#D1FAE5' },
-        { key: 'g_c5_stair_top', name_ar: 'درج جناح الخامس (شمال)', wing: 'جناح الصف الخامس', x: 114, y: 14, w: 14, h: 32, icon: 'fa-stairs', color: '#FED7AA' },
-        { key: 'g_c5_stair_bot', name_ar: 'درج جناح الخامس (غرب)', wing: 'جناح الصف الخامس', x: 6, y: 50, w: 14, h: 32, icon: 'fa-stairs', color: '#FED7AA' },
-        { key: 'g_c5_3', name_ar: 'صف الخامس 3', wing: 'جناح الصف الخامس', x: 22, y: 50, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FEF08A' },
-        { key: 'g_c5_2', name_ar: 'صف الخامس 2', wing: 'جناح الصف الخامس', x: 44, y: 50, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FEF08A' },
-        { key: 'g_c5_1', name_ar: 'صف الخامس 1', wing: 'جناح الصف الخامس', x: 66, y: 50, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FEF08A' },
-        { key: 'g_c5_teachers', name_ar: 'غرفة معلمين الخامس', wing: 'جناح الصف الخامس', x: 88, y: 50, w: 24, h: 32, icon: 'fa-users', color: '#BBF7D0' },
-        { key: 'g_c5_wc', name_ar: 'دورة مياه جناح الخامس', wing: 'جناح الصف الخامس', x: 114, y: 50, w: 14, h: 32, icon: 'fa-restroom', color: '#BAE6FD' },
-        { key: 'g_c6_stair_top', name_ar: 'درج جناح السادس (غرب)', wing: 'جناح الصف السادس', x: 272, y: 14, w: 14, h: 32, icon: 'fa-stairs', color: '#FED7AA' },
-        { key: 'g_c6_admin', name_ar: 'إدارة جناح السادس', wing: 'جناح الصف السادس', x: 288, y: 14, w: 24, h: 32, icon: 'fa-briefcase', color: '#D1FAE5' },
-        { key: 'g_c6_6', name_ar: 'صف السادس 6', wing: 'جناح الصف السادس', x: 314, y: 14, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'g_c6_3', name_ar: 'صف السادس 3', wing: 'جناح الصف السادس', x: 336, y: 14, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'g_c6_5', name_ar: 'صف السادس 5', wing: 'جناح الصف السادس', x: 358, y: 14, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'g_c6_sup_top', name_ar: 'إشراف ومخزن السادس', wing: 'جناح الصف السادس', x: 380, y: 14, w: 14, h: 32, icon: 'fa-box', color: '#E2E8F0' },
-        { key: 'g_c6_wc', name_ar: 'دورة مياه جناح السادس', wing: 'جناح الصف السادس', x: 272, y: 50, w: 14, h: 32, icon: 'fa-restroom', color: '#BAE6FD' },
-        { key: 'g_c6_teachers', name_ar: 'غرفة معلمين السادس', wing: 'جناح الصف السادس', x: 288, y: 50, w: 24, h: 32, icon: 'fa-users', color: '#BBF7D0' },
-        { key: 'g_c6_1', name_ar: 'صف السادس 1', wing: 'جناح الصف السادس', x: 314, y: 50, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'g_c6_2', name_ar: 'صف السادس 2', wing: 'جناح الصف السادس', x: 336, y: 50, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'g_c6_4', name_ar: 'صف السادس 4', wing: 'جناح الصف السادس', x: 358, y: 50, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'g_c6_stair_bot', name_ar: 'درج جناح السادس (شرق)', wing: 'جناح الصف السادس', x: 380, y: 50, w: 14, h: 32, icon: 'fa-stairs', color: '#FED7AA' },
-        { key: 'g_yard_left', name_ar: 'ساحة ومضمار الأنشطة 1', wing: 'الساحات والملاعب', x: 6, y: 88, w: 122, h: 126, icon: 'fa-futbol', color: '#F8FAFC' },
-        { key: 'g_yard_right', name_ar: 'ساحة ومضمار الأنشطة 2', wing: 'الساحات والملاعب', x: 272, y: 88, w: 122, h: 126, icon: 'fa-futbol', color: '#F8FAFC' },
-        { key: 'g_cafe_1', name_ar: 'كافيتريا 1', wing: 'الخدمات المركزية', x: 134, y: 14, w: 40, h: 120, icon: 'fa-utensils', color: '#FEF3C7' },
-        { key: 'g_cafe_services', name_ar: 'خدمات ومخزن الكافيتريا', wing: 'الخدمات المركزية', x: 176, y: 14, w: 48, h: 120, icon: 'fa-burger', color: '#BAE6FD' },
-        { key: 'g_cafe_2', name_ar: 'كافيتريا 2', wing: 'الخدمات المركزية', x: 226, y: 14, w: 40, h: 120, icon: 'fa-utensils', color: '#FEF3C7' },
-        { key: 'g_art_room', name_ar: 'غرفة الفنية', wing: 'الأنشطة المركزية', x: 134, y: 138, w: 28, h: 30, icon: 'fa-palette', color: '#FED7AA' },
-        { key: 'g_lecture', name_ar: 'غرفة المحاضرات', wing: 'الأنشطة المركزية', x: 164, y: 138, w: 72, h: 30, icon: 'fa-person-chalkboard', color: '#FBCFE8' },
-        { key: 'g_music_room', name_ar: 'غرفة الموسيقى', wing: 'الأنشطة المركزية', x: 238, y: 138, w: 28, h: 30, icon: 'fa-music', color: '#FED7AA' },
-        { key: 'g_pool', name_ar: 'المسبح والمدرجات', wing: 'الخدمات الرياضية', x: 134, y: 172, w: 132, h: 44, icon: 'fa-water', color: '#BAE6FD' },
-        { key: 'g_gym', name_ar: 'الصالة الرياضية والمدرجات', wing: 'الخدمات الرياضية', x: 134, y: 220, w: 132, h: 68, icon: 'fa-dumbbell', color: '#DDD6FE' },
-        { key: 'g_c2_sup_top', name_ar: 'إشراف ومخزن الثاني', wing: 'جناح الصف الثاني', x: 6, y: 220, w: 14, h: 32, icon: 'fa-box', color: '#E2E8F0' },
-        { key: 'g_c2_5', name_ar: 'صف الثاني 5', wing: 'جناح الصف الثاني', x: 22, y: 220, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#BBF7D0' },
-        { key: 'g_c2_3', name_ar: 'صف الثاني 3', wing: 'جناح الصف الثاني', x: 44, y: 220, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#BBF7D0' },
-        { key: 'g_c2_1', name_ar: 'صف الثاني 1', wing: 'جناح الصف الثاني', x: 66, y: 220, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#BBF7D0' },
-        { key: 'g_c2_hall', name_ar: 'قاعة دراسية (جناح 2)', wing: 'جناح الصف الثاني', x: 88, y: 220, w: 24, h: 32, icon: 'fa-book', color: '#FEF3C7' },
-        { key: 'g_c2_stair_top', name_ar: 'مخزن ودرج الثاني (شرق)', wing: 'جناح الصف الثاني', x: 114, y: 220, w: 14, h: 32, icon: 'fa-stairs', color: '#FED7AA' },
-        { key: 'g_c2_stair_bot', name_ar: 'درج جناح الثاني (غرب)', wing: 'جناح الصف الثاني', x: 6, y: 256, w: 14, h: 32, icon: 'fa-stairs', color: '#FED7AA' },
-        { key: 'g_c2_sen', name_ar: 'قسم التربية الخاصة (2)', wing: 'جناح الصف الثاني', x: 22, y: 256, w: 24, h: 32, icon: 'fa-heart', color: '#BBF7D0' },
-        { key: 'g_c2_4', name_ar: 'صف الثاني 4', wing: 'جناح الصف الثاني', x: 48, y: 256, w: 18, h: 32, icon: 'fa-chalkboard-user', color: '#BBF7D0' },
-        { key: 'g_c2_2', name_ar: 'صف الثاني 2', wing: 'جناح الصف الثاني', x: 68, y: 256, w: 18, h: 32, icon: 'fa-chalkboard-user', color: '#BBF7D0' },
-        { key: 'g_c2_teachers', name_ar: 'غرفة معلمين الثاني', wing: 'جناح الصف الثاني', x: 88, y: 256, w: 24, h: 32, icon: 'fa-users', color: '#BBF7D0' },
-        { key: 'g_c2_wc', name_ar: 'دورة مياه جناح الثاني', wing: 'جناح الصف الثاني', x: 114, y: 256, w: 14, h: 32, icon: 'fa-restroom', color: '#BAE6FD' },
-        { key: 'g_c4_stair_top', name_ar: 'مخزن ودرج الرابع (غرب)', wing: 'جناح الصف الرابع', x: 272, y: 220, w: 14, h: 32, icon: 'fa-stairs', color: '#FED7AA' },
-        { key: 'g_c4_hall', name_ar: 'قاعة دراسية (جناح 4)', wing: 'جناح الصف الرابع', x: 288, y: 220, w: 24, h: 32, icon: 'fa-book', color: '#BBF7D0' },
-        { key: 'g_c4_2', name_ar: 'صف الرابع 2', wing: 'جناح الصف الرابع', x: 314, y: 220, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'g_c4_4', name_ar: 'صف الرابع 4', wing: 'جناح الصف الرابع', x: 336, y: 220, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'g_c4_6', name_ar: 'صف الرابع 6', wing: 'جناح الصف الرابع', x: 358, y: 220, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'g_c4_sup_top', name_ar: 'إشراف ومخزن الرابع', wing: 'جناح الصف الرابع', x: 380, y: 220, w: 14, h: 32, icon: 'fa-box', color: '#E2E8F0' },
-        { key: 'g_c4_wc', name_ar: 'دورة مياه جناح الرابع', wing: 'جناح الصف الرابع', x: 272, y: 256, w: 14, h: 32, icon: 'fa-restroom', color: '#BAE6FD' },
-        { key: 'g_c4_teachers', name_ar: 'غرفة معلمين الرابع', wing: 'جناح الصف الرابع', x: 288, y: 256, w: 24, h: 32, icon: 'fa-users', color: '#BBF7D0' },
-        { key: 'g_c4_1', name_ar: 'صف الرابع 1', wing: 'جناح الصف الرابع', x: 314, y: 256, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'g_c4_3', name_ar: 'صف الرابع 3', wing: 'جناح الصف الرابع', x: 336, y: 256, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'g_c4_5', name_ar: 'صف الرابع 5', wing: 'جناح الصف الرابع', x: 358, y: 256, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'g_c4_stair_bot', name_ar: 'درج جناح الرابع (شرق)', wing: 'جناح الصف الرابع', x: 380, y: 256, w: 14, h: 32, icon: 'fa-stairs', color: '#FED7AA' },
-        { key: 'g_play_left', name_ar: 'ساحة المظلات وألعاب الأطفال 1', wing: 'الساحات والملاعب', x: 6, y: 294, w: 122, h: 68, icon: 'fa-face-smile', color: '#F8FAFC' },
-        { key: 'g_play_right', name_ar: 'ساحة المظلات وألعاب الأطفال 2', wing: 'الساحات والملاعب', x: 272, y: 294, w: 122, h: 68, icon: 'fa-face-smile', color: '#F8FAFC' },
-        { key: 'g_lab_sci_2', name_ar: 'مختبر العلوم 2', wing: 'المختبرات', x: 134, y: 294, w: 24, h: 68, icon: 'fa-flask', color: '#FECDD3' },
-        { key: 'g_lab_elec_1', name_ar: 'كهرباء ومخزن مختبرات 2', wing: 'المختبرات', x: 160, y: 294, w: 12, h: 68, icon: 'fa-bolt', color: '#E2E8F0' },
-        { key: 'g_lab_comp_2', name_ar: 'مختبر الحاسوب 2', wing: 'المختبرات', x: 174, y: 294, w: 24, h: 68, icon: 'fa-microchip', color: '#FECDD3' },
-        { key: 'g_lab_comp_1', name_ar: 'مختبر الحاسوب 1', wing: 'المختبرات', x: 200, y: 294, w: 24, h: 68, icon: 'fa-microchip', color: '#FECDD3' },
-        { key: 'g_lab_elec_2', name_ar: 'كهرباء ومخزن مختبرات 1', wing: 'المختبرات', x: 226, y: 294, w: 12, h: 68, icon: 'fa-bolt', color: '#E2E8F0' },
-        { key: 'g_lab_sci_1', name_ar: 'مختبر العلوم 1', wing: 'المختبرات', x: 240, y: 294, w: 26, h: 68, icon: 'fa-flask', color: '#FECDD3' },
-        { key: 'g_c1_stair_top', name_ar: 'درج جناح الأول (غرب)', wing: 'جناح الصف الأول', x: 6, y: 368, w: 14, h: 34, icon: 'fa-stairs', color: '#FED7AA' },
-        { key: 'g_c1_5', name_ar: 'صف الأول 5', wing: 'جناح الصف الأول', x: 22, y: 368, w: 20, h: 34, icon: 'fa-chalkboard-user', color: '#FEF08A' },
-        { key: 'g_c1_3', name_ar: 'صف الأول 3', wing: 'جناح الصف الأول', x: 44, y: 368, w: 20, h: 34, icon: 'fa-chalkboard-user', color: '#FEF08A' },
-        { key: 'g_c1_1', name_ar: 'صف الأول 1', wing: 'جناح الصف الأول', x: 66, y: 368, w: 20, h: 34, icon: 'fa-chalkboard-user', color: '#FEF08A' },
-        { key: 'g_c1_hall', name_ar: 'قاعة دراسية (جناح 1)', wing: 'جناح الصف الأول', x: 88, y: 368, w: 24, h: 34, icon: 'fa-book', color: '#BBF7D0' },
-        { key: 'g_c1_wc', name_ar: 'دورة مياه جناح الأول', wing: 'جناح الصف الأول', x: 114, y: 368, w: 14, h: 34, icon: 'fa-restroom', color: '#BAE6FD' },
-        { key: 'g_c1_sup_bot', name_ar: 'إشراف ومخزن الأول', wing: 'جناح الصف الأول', x: 6, y: 406, w: 14, h: 34, icon: 'fa-box', color: '#E2E8F0' },
-        { key: 'g_c1_6', name_ar: 'صف الأول 6', wing: 'جناح الصف الأول', x: 22, y: 406, w: 20, h: 34, icon: 'fa-chalkboard-user', color: '#FEF08A' },
-        { key: 'g_c1_4', name_ar: 'صف الأول 4', wing: 'جناح الصف الأول', x: 44, y: 406, w: 20, h: 34, icon: 'fa-chalkboard-user', color: '#FEF08A' },
-        { key: 'g_c1_2', name_ar: 'صف الأول 2', wing: 'جناح الصف الأول', x: 66, y: 406, w: 20, h: 34, icon: 'fa-chalkboard-user', color: '#FEF08A' },
-        { key: 'g_c1_teachers', name_ar: 'غرفة معلمين الأول', wing: 'جناح الصف الأول', x: 88, y: 406, w: 24, h: 34, icon: 'fa-users', color: '#BBF7D0' },
-        { key: 'g_c1_stair_bot', name_ar: 'درج جناح الأول (شرق)', wing: 'جناح الصف الأول', x: 114, y: 406, w: 14, h: 34, icon: 'fa-stairs', color: '#FED7AA' },
-        { key: 'g_c3_wc', name_ar: 'دورة مياه جناح الثالث', wing: 'جناح الصف الثالث', x: 272, y: 368, w: 14, h: 34, icon: 'fa-restroom', color: '#BAE6FD' },
-        { key: 'g_c3_admin_room', name_ar: 'غرفة إدارة الثالث', wing: 'جناح الصف الثالث', x: 288, y: 368, w: 24, h: 34, icon: 'fa-briefcase', color: '#BBF7D0' },
-        { key: 'g_c3_2', name_ar: 'صف الثالث 2', wing: 'جناح الصف الثالث', x: 314, y: 368, w: 20, h: 34, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'g_c3_4', name_ar: 'صف الثالث 4', wing: 'جناح الصف الثالث', x: 336, y: 368, w: 20, h: 34, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'g_c3_sen', name_ar: 'قسم التربية الخاصة (3)', wing: 'جناح الصف الثالث', x: 358, y: 368, w: 20, h: 34, icon: 'fa-heart', color: '#FEF08A' },
-        { key: 'g_c3_stair_top', name_ar: 'درج جناح الثالث (شرق)', wing: 'جناح الصف الثالث', x: 380, y: 368, w: 14, h: 34, icon: 'fa-stairs', color: '#FED7AA' },
-        { key: 'g_c3_sup_admin', name_ar: 'مشرف إدارة ودرج الثالث', wing: 'جناح الصف الثالث', x: 272, y: 406, w: 14, h: 34, icon: 'fa-stairs', color: '#FED7AA' },
-        { key: 'g_c3_teachers', name_ar: 'غرفة معلمين الثالث', wing: 'جناح الصف الثالث', x: 288, y: 406, w: 24, h: 34, icon: 'fa-users', color: '#BBF7D0' },
-        { key: 'g_c3_1', name_ar: 'صف الثالث 1', wing: 'جناح الصف الثالث', x: 314, y: 406, w: 20, h: 34, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'g_c3_3', name_ar: 'صف الثالث 3', wing: 'جناح الصف الثالث', x: 336, y: 406, w: 20, h: 34, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'g_c3_5', name_ar: 'صف الثالث 5', wing: 'جناح الصف الثالث', x: 358, y: 406, w: 20, h: 34, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'g_c3_sup_bot', name_ar: 'إشراف ومخزن الثالث', wing: 'جناح الصف الثالث', x: 380, y: 406, w: 14, h: 34, icon: 'fa-box', color: '#E2E8F0' },
+        { key: 'g_c5_sup_top', name_ar: 'إشراف ومخزن الخامس', wing: 'جناح الخامس', x: 6, y: 14, w: 14, h: 32, icon: 'fa-box', color: '#E2E8F0' },
+        { key: 'g_c5_4', name_ar: 'صف الخامس 4', wing: 'جناح الخامس', x: 22, y: 14, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FEF08A' },
+        { key: 'g_c5_5', name_ar: 'صف الخامس 5', wing: 'جناح الخامس', x: 44, y: 14, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FEF08A' },
+        { key: 'g_c5_6', name_ar: 'صف الخامس 6', wing: 'جناح الخامس', x: 66, y: 14, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FEF08A' },
+        { key: 'g_c5_admin', name_ar: 'إدارة جناح الخامس', wing: 'جناح الخامس', x: 88, y: 14, w: 24, h: 32, icon: 'fa-briefcase', color: '#D1FAE5' },
+        { key: 'g_c5_stair_top', name_ar: 'درج (شمال)', wing: 'جناح الخامس', x: 114, y: 14, w: 14, h: 32, icon: 'fa-stairs', color: '#FED7AA' },
+        { key: 'g_c5_stair_bot', name_ar: 'درج (غرب)', wing: 'جناح الخامس', x: 6, y: 50, w: 14, h: 32, icon: 'fa-stairs', color: '#FED7AA' },
+        { key: 'g_c5_3', name_ar: 'صف الخامس 3', wing: 'جناح الخامس', x: 22, y: 50, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FEF08A' },
+        { key: 'g_c5_2', name_ar: 'صف الخامس 2', wing: 'جناح الخامس', x: 44, y: 50, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FEF08A' },
+        { key: 'g_c5_1', name_ar: 'صف الخامس 1', wing: 'جناح الخامس', x: 66, y: 50, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FEF08A' },
+        { key: 'g_c5_teachers', name_ar: 'غرفة المعلمين', wing: 'جناح الخامس', x: 88, y: 50, w: 24, h: 32, icon: 'fa-users', color: '#BBF7D0' },
+        { key: 'g_c5_wc', name_ar: 'دورة مياه', wing: 'جناح الخامس', x: 114, y: 50, w: 14, h: 32, icon: 'fa-restroom', color: '#BAE6FD' },
+        { key: 'g_c6_stair_top', name_ar: 'درج (غرب)', wing: 'جناح السادس', x: 272, y: 14, w: 14, h: 32, icon: 'fa-stairs', color: '#FED7AA' },
+        { key: 'g_c6_admin', name_ar: 'إدارة الجناح', wing: 'جناح السادس', x: 288, y: 14, w: 24, h: 32, icon: 'fa-briefcase', color: '#D1FAE5' },
+        { key: 'g_c6_6', name_ar: 'صف السادس 6', wing: 'جناح السادس', x: 314, y: 14, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FED7AA' },
+        { key: 'g_c6_3', name_ar: 'صف السادس 3', wing: 'جناح السادس', x: 336, y: 14, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FED7AA' },
+        { key: 'g_c6_5', name_ar: 'صف السادس 5', wing: 'جناح السادس', x: 358, y: 14, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FED7AA' },
+        { key: 'g_c6_sup_top', name_ar: 'إشراف ومخزن', wing: 'جناح السادس', x: 380, y: 14, w: 14, h: 32, icon: 'fa-box', color: '#E2E8F0' },
+        { key: 'g_c6_wc', name_ar: 'دورة مياه', wing: 'جناح السادس', x: 272, y: 50, w: 14, h: 32, icon: 'fa-restroom', color: '#BAE6FD' },
+        { key: 'g_c6_teachers', name_ar: 'غرفة المعلمين', wing: 'جناح السادس', x: 288, y: 50, w: 24, h: 32, icon: 'fa-users', color: '#BBF7D0' },
+        { key: 'g_c6_1', name_ar: 'صف السادس 1', wing: 'جناح السادس', x: 314, y: 50, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FED7AA' },
+        { key: 'g_c6_2', name_ar: 'صف السادس 2', wing: 'جناح السادس', x: 336, y: 50, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FED7AA' },
+        { key: 'g_c6_4', name_ar: 'صف السادس 4', wing: 'جناح السادس', x: 358, y: 50, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FED7AA' },
+        { key: 'g_c6_stair_bot', name_ar: 'درج (شرق)', wing: 'جناح السادس', x: 380, y: 50, w: 14, h: 32, icon: 'fa-stairs', color: '#FED7AA' },
+        { key: 'g_yard_left', name_ar: 'ساحة ومضمار 1', wing: 'الملاعب', x: 6, y: 88, w: 122, h: 126, icon: 'fa-futbol', color: '#F8FAFC' },
+        { key: 'g_yard_right', name_ar: 'ساحة ومضمار 2', wing: 'الملاعب', x: 272, y: 88, w: 122, h: 126, icon: 'fa-futbol', color: '#F8FAFC' },
+        { key: 'g_cafe_1', name_ar: 'كافيتريا 1', wing: 'الخدمات', x: 134, y: 14, w: 40, h: 120, icon: 'fa-utensils', color: '#FEF3C7' },
+        { key: 'g_cafe_services', name_ar: 'خدمات الكافيتريا', wing: 'الخدمات', x: 176, y: 14, w: 48, h: 120, icon: 'fa-burger', color: '#BAE6FD' },
+        { key: 'g_cafe_2', name_ar: 'كافيتريا 2', wing: 'الخدمات', x: 226, y: 14, w: 40, h: 120, icon: 'fa-utensils', color: '#FEF3C7' },
+        { key: 'g_pool', name_ar: 'المسبح والمدرجات', wing: 'الرياضة', x: 134, y: 172, w: 132, h: 44, icon: 'fa-water', color: '#BAE6FD' },
+        { key: 'g_gym', name_ar: 'الصالة الرياضية', wing: 'الرياضة', x: 134, y: 220, w: 132, h: 68, icon: 'fa-dumbbell', color: '#DDD6FE' },
+        { key: 'g_c2_5', name_ar: 'صف الثاني 5', wing: 'جناح الثاني', x: 22, y: 220, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#BBF7D0' },
+        { key: 'g_c2_3', name_ar: 'صف الثاني 3', wing: 'جناح الثاني', x: 44, y: 220, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#BBF7D0' },
+        { key: 'g_c2_1', name_ar: 'صف الثاني 1', wing: 'جناح الثاني', x: 66, y: 220, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#BBF7D0' },
+        { key: 'g_c4_2', name_ar: 'صف الرابع 2', wing: 'جناح الرابع', x: 314, y: 220, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FED7AA' },
+        { key: 'g_c4_4', name_ar: 'صف الرابع 4', wing: 'جناح الرابع', x: 336, y: 220, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FED7AA' },
+        { key: 'g_c4_6', name_ar: 'صف الرابع 6', wing: 'جناح الرابع', x: 358, y: 220, w: 20, h: 32, icon: 'fa-chalkboard-user', color: '#FED7AA' },
+        { key: 'g_c1_5', name_ar: 'صف الأول 5', wing: 'جناح الأول', x: 22, y: 368, w: 20, h: 34, icon: 'fa-chalkboard-user', color: '#FEF08A' },
+        { key: 'g_c1_3', name_ar: 'صف الأول 3', wing: 'جناح الأول', x: 44, y: 368, w: 20, h: 34, icon: 'fa-chalkboard-user', color: '#FEF08A' },
+        { key: 'g_c1_1', name_ar: 'صف الأول 1', wing: 'جناح الأول', x: 66, y: 368, w: 20, h: 34, icon: 'fa-chalkboard-user', color: '#FEF08A' },
+        { key: 'g_c3_2', name_ar: 'صف الثالث 2', wing: 'جناح الثالث', x: 314, y: 368, w: 20, h: 34, icon: 'fa-chalkboard-user', color: '#FED7AA' },
+        { key: 'g_c3_4', name_ar: 'صف الثالث 4', wing: 'جناح الثالث', x: 336, y: 368, w: 20, h: 34, icon: 'fa-chalkboard-user', color: '#FED7AA' },
         { key: 'g_clinic', name_ar: 'العيادة الصحية', wing: 'الإدارة', x: 134, y: 368, w: 22, h: 34, icon: 'fa-kit-medical', color: '#D1FAE5' },
         { key: 'g_admin_center', name_ar: 'إدارة المجمع', wing: 'الإدارة', x: 158, y: 368, w: 20, h: 34, icon: 'fa-briefcase', color: '#FEE2E2' },
         { key: 'g_principal', name_ar: 'غرفة المدير', wing: 'الإدارة', x: 180, y: 368, w: 20, h: 34, icon: 'fa-user-tie', color: '#FEE2E2' },
-        { key: 'g_meeting', name_ar: 'غرفة الاجتماعات', wing: 'الإدارة', x: 202, y: 368, w: 22, h: 34, icon: 'fa-users-line', color: '#FEE2E2' },
-        { key: 'g_server', name_ar: 'غرفة السيرفر', wing: 'الإدارة', x: 226, y: 368, w: 20, h: 34, icon: 'fa-server', color: '#DDD6FE' },
-        { key: 'g_admin_elec', name_ar: 'كهرباء ودرج الإدارة', wing: 'الإدارة', x: 248, y: 368, w: 18, h: 34, icon: 'fa-bolt', color: '#FED7AA' },
-        { key: 'g_admin_affairs', name_ar: 'إدارة الشؤون الإدارية', wing: 'الإدارة', x: 134, y: 406, w: 24, h: 34, icon: 'fa-briefcase', color: '#FEE2E2' },
-        { key: 'g_finance', name_ar: 'الإدارة المالية', wing: 'الإدارة', x: 160, y: 406, w: 22, h: 34, icon: 'fa-wallet', color: '#FEE2E2' },
-        { key: 'g_prayer', name_ar: 'مصلى الدور الأرضي', wing: 'الإدارة', x: 184, y: 406, w: 22, h: 34, icon: 'fa-mosque', color: '#D1FAE5' },
-        { key: 'g_reception', name_ar: 'الاستقبال الرئيسي', wing: 'الإدارة', x: 208, y: 406, w: 34, h: 34, icon: 'fa-door-open', color: '#BAE6FD' },
-        { key: 'g_security', name_ar: 'مكتب الأمن والاستعلامات', wing: 'الإدارة', x: 244, y: 406, w: 22, h: 34, icon: 'fa-shield-halved', color: '#E2E8F0' }
+        { key: 'g_reception', name_ar: 'الاستقبال الرئيسي', wing: 'الإدارة', x: 208, y: 406, w: 34, h: 34, icon: 'fa-door-open', color: '#BAE6FD' }
       ],
       upper: [
-        { key: 'u_lib_boys', name_ar: 'مكتبة الطلاب', wing: 'المكتبات والمصليات', x: 145, y: 100, w: 110, h: 32, icon: 'fa-book', color: '#BAE6FD' },
-        { key: 'u_lib_girls', name_ar: 'مكتبة الطالبات', wing: 'المكتبات والمصليات', x: 145, y: 138, w: 110, h: 32, icon: 'fa-book', color: '#BAE6FD' },
-        { key: 'u_pray_men', name_ar: 'مصلى الرجال', wing: 'المكتبات والمصليات', x: 255, y: 175, w: 42, h: 58, icon: 'fa-mosque', color: '#D1FAE5' },
-        { key: 'u_pray_women', name_ar: 'مصلى النساء', wing: 'المكتبات والمصليات', x: 104, y: 175, w: 42, h: 58, icon: 'fa-mosque', color: '#D1FAE5' },
-        { key: 'u_c11_g1', name_ar: 'صف 11 G1', wing: 'جناح الصف 11', x: 80, y: 114, w: 38, h: 28, icon: 'fa-chalkboard-user', color: '#FEF08A' },
-        { key: 'u_c11_g2', name_ar: 'صف 11 G2', wing: 'جناح الصف 11', x: 42, y: 114, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#FEF08A' },
-        { key: 'u_c11_g3', name_ar: 'صف 11 G3', wing: 'جناح الصف 11', x: 4, y: 114, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#FEF08A' },
-        { key: 'u_c11_a1', name_ar: 'صف 11 A1', wing: 'جناح الصف 11', x: 80, y: 146, w: 38, h: 28, icon: 'fa-chalkboard-user', color: '#FEF08A' },
-        { key: 'u_c11_a2', name_ar: 'صف 11 A2', wing: 'جناح الصف 11', x: 42, y: 146, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#FEF08A' },
-        { key: 'u_c11_a3', name_ar: 'صف 11 A3', wing: 'جناح الصف 11', x: 4, y: 146, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#FEF08A' },
-        { key: 'u_c12_a1', name_ar: 'صف 12 A1', wing: 'جناح الصف 12', x: 282, y: 114, w: 38, h: 28, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'u_c12_a2', name_ar: 'صف 12 A2', wing: 'جناح الصف 12', x: 322, y: 114, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'u_c12_a3', name_ar: 'صف 12 A3', wing: 'جناح الصف 12', x: 360, y: 114, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'u_c12_g1', name_ar: 'صف 12 G1', wing: 'جناح الصف 12', x: 282, y: 146, w: 38, h: 28, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'u_c12_g2', name_ar: 'صف 12 G2', wing: 'جناح الصف 12', x: 322, y: 146, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'u_c12_g3', name_ar: 'صف 12 G3', wing: 'جناح الصف 12', x: 360, y: 146, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'u_c9_1', name_ar: 'صف التاسع G1', wing: 'جناح الصف التاسع', x: 80, y: 260, w: 38, h: 28, icon: 'fa-chalkboard-user', color: '#BBF7D0' },
-        { key: 'u_c9_2', name_ar: 'صف التاسع G2', wing: 'جناح الصف التاسع', x: 42, y: 260, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#BBF7D0' },
-        { key: 'u_c9_3', name_ar: 'صف التاسع G3', wing: 'جناح الصف التاسع', x: 4, y: 260, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#BBF7D0' },
-        { key: 'u_c9_4', name_ar: 'صف التاسع A1', wing: 'جناح الصف التاسع', x: 80, y: 292, w: 38, h: 28, icon: 'fa-chalkboard-user', color: '#BBF7D0' },
-        { key: 'u_c9_5', name_ar: 'صف التاسع A2', wing: 'جناح الصف التاسع', x: 42, y: 292, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#BBF7D0' },
-        { key: 'u_c9_6', name_ar: 'صف التاسع A3', wing: 'جناح الصف التاسع', x: 4, y: 292, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#BBF7D0' },
-        { key: 'u_c10_1', name_ar: 'صف العاشر A1', wing: 'جناح الصف العاشر', x: 282, y: 260, w: 38, h: 28, icon: 'fa-chalkboard-user', color: '#E9D5FF' },
-        { key: 'u_c10_2', name_ar: 'صف العاشر A2', wing: 'جناح الصف العاشر', x: 322, y: 260, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#E9D5FF' },
-        { key: 'u_c10_3', name_ar: 'صف العاشر A3', wing: 'جناح الصف العاشر', x: 360, y: 260, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#E9D5FF' },
-        { key: 'u_c10_4', name_ar: 'صف العاشر G1', wing: 'جناح الصف العاشر', x: 282, y: 292, w: 38, h: 28, icon: 'fa-chalkboard-user', color: '#E9D5FF' },
-        { key: 'u_c10_5', name_ar: 'صف العاشر G2', wing: 'جناح الصف العاشر', x: 322, y: 292, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#E9D5FF' },
-        { key: 'u_c10_6', name_ar: 'صف العاشر G3', wing: 'جناح الصف العاشر', x: 360, y: 292, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#E9D5FF' },
-        { key: 'u_c7_1', name_ar: 'صف السابع 1', wing: 'جناح الصف السابع', x: 4, y: 365, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'u_c7_2', name_ar: 'صف السابع 2', wing: 'جناح الصف السابع', x: 42, y: 365, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'u_c7_3', name_ar: 'صف السابع 3', wing: 'جناح الصف السابع', x: 80, y: 365, w: 38, h: 28, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'u_c7_4', name_ar: 'صف السابع 4', wing: 'جناح الصف السابع', x: 80, y: 398, w: 38, h: 28, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'u_c7_5', name_ar: 'صف السابع 5', wing: 'جناح الصف السابع', x: 42, y: 398, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'u_c7_6', name_ar: 'صف السابع 6', wing: 'جناح الصف السابع', x: 4, y: 398, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#FED7AA' },
-        { key: 'u_c8_1', name_ar: 'صف الثامن 1', wing: 'جناح الصف الثامن', x: 360, y: 365, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#BAE6FD' },
-        { key: 'u_c8_2', name_ar: 'صف الثامن 2', wing: 'جناح الصف الثامن', x: 322, y: 365, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#BAE6FD' },
-        { key: 'u_c8_3', name_ar: 'صف الثامن 3', wing: 'جناح الصف الثامن', x: 282, y: 365, w: 38, h: 28, icon: 'fa-chalkboard-user', color: '#BAE6FD' },
-        { key: 'u_c8_4', name_ar: 'صف الثامن 4', wing: 'جناح الصف الثامن', x: 282, y: 398, w: 38, h: 28, icon: 'fa-chalkboard-user', color: '#BAE6FD' },
-        { key: 'u_c8_5', name_ar: 'صف الثامن 5', wing: 'جناح الصف الثامن', x: 322, y: 398, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#BAE6FD' },
-        { key: 'u_c8_6', name_ar: 'صف الثامن 6', wing: 'جناح الصف الثامن', x: 360, y: 398, w: 36, h: 28, icon: 'fa-chalkboard-user', color: '#BAE6FD' },
-        { key: 'u_lab_phys_1', name_ar: 'مختبر الفيزياء 1', wing: 'المختبرات', x: 114, y: 310, w: 38, h: 32, icon: 'fa-bolt', color: '#FECDD3' },
-        { key: 'u_lab_chem_1', name_ar: 'مختبر الكيمياء 1', wing: 'المختبرات', x: 154, y: 310, w: 38, h: 32, icon: 'fa-flask', color: '#FECDD3' },
-        { key: 'u_lab_chem_2', name_ar: 'مختبر الكيمياء 2', wing: 'المختبرات', x: 208, y: 310, w: 38, h: 32, icon: 'fa-flask', color: '#FECDD3' },
-        { key: 'u_lab_phys_2', name_ar: 'مختبر الفيزياء 2', wing: 'المختبرات', x: 248, y: 310, w: 38, h: 32, icon: 'fa-bolt', color: '#FECDD3' },
-        { key: 'u_lab_robot', name_ar: 'مختبر روبوتات', wing: 'المختبرات', x: 208, y: 395, w: 38, h: 32, icon: 'fa-microchip', color: '#DDD6FE' },
-        { key: 'u_lab_health', name_ar: 'مختبر علوم صحية', wing: 'المختبرات', x: 154, y: 395, w: 38, h: 32, icon: 'fa-kit-medical', color: '#D1FAE5' }
+        { key: 'u_lib_boys', name_ar: 'مكتبة الطلاب', wing: 'المكتبات', x: 145, y: 100, w: 110, h: 32, icon: 'fa-book', color: '#BAE6FD' },
+        { key: 'u_pray_men', name_ar: 'مصلى الرجال', wing: 'المصليات', x: 255, y: 175, w: 42, h: 58, icon: 'fa-mosque', color: '#D1FAE5' },
+        { key: 'u_pray_women', name_ar: 'مصلى النساء', wing: 'المصليات', x: 104, y: 175, w: 42, h: 58, icon: 'fa-mosque', color: '#D1FAE5' },
+        { key: 'u_c11_g1', name_ar: 'صف 11 G1', wing: 'جناح 11', x: 80, y: 114, w: 38, h: 28, icon: 'fa-chalkboard-user', color: '#FEF08A' },
+        { key: 'u_c12_a1', name_ar: 'صف 12 A1', wing: 'جناح 12', x: 282, y: 114, w: 38, h: 28, icon: 'fa-chalkboard-user', color: '#FED7AA' },
+        { key: 'u_c9_1', name_ar: 'صف التاسع G1', wing: 'جناح 9', x: 80, y: 260, w: 38, h: 28, icon: 'fa-chalkboard-user', color: '#BBF7D0' },
+        { key: 'u_c10_1', name_ar: 'صف العاشر A1', wing: 'جناح 10', x: 282, y: 260, w: 38, h: 28, icon: 'fa-chalkboard-user', color: '#E9D5FF' },
+        { key: 'u_lab_phys_1', name_ar: 'مختبر الفيزياء', wing: 'المختبرات', x: 114, y: 310, w: 38, h: 32, icon: 'fa-bolt', color: '#FECDD3' },
+        { key: 'u_lab_chem_1', name_ar: 'مختبر الكيمياء', wing: 'المختبرات', x: 154, y: 310, w: 38, h: 32, icon: 'fa-flask', color: '#FECDD3' }
       ]
     };
 
-    // التشغيل عند اكتمال تحميل الصفحة
-    document.addEventListener('DOMContentLoaded', () => {
-      
-      // تهيئة Supabase
-      if (window.supabase) {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      } else {
-        showToast('لم يتم تحميل قاعدة البيانات تأكد من الإنترنت', 'error');
+    // 3. تهيئة الاتصال بقاعدة البيانات عند فتح الصفحة
+    window.onload = function() {
+      try {
+        if(window.supabase) {
+          window.supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+          console.log("Supabase Loaded Successfully!");
+        } else {
+          window.showToast('تعذر تحميل قاعدة البيانات، يرجى تحديث الصفحة.', 'error');
+        }
+      } catch (err) {
+        console.error(err);
       }
-
-      // ربط أحداث أزرار الدخول
-      document.querySelectorAll('[data-action="open-login"]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          tempRole = e.currentTarget.dataset.role;
-          document.getElementById('pin-role-title').textContent = tempRole === 'inspector' ? 'مفتش صيانة' : tempRole === 'worker' ? 'تسوية الأعطال' : 'إدارة المجمع';
-          document.getElementById('pin-input').value = '';
-          openModal('pin-modal');
-        });
-      });
-
-      // زر التأكيد والالغاء للدخول
-      document.getElementById('btn-verify-login').addEventListener('click', verifyLogin);
-      document.getElementById('btn-close-login').addEventListener('click', () => closeModal('pin-modal'));
-      document.getElementById('btn-logout').addEventListener('click', logout);
-      document.getElementById('btn-refresh').addEventListener('click', refreshData);
-
-      // ربط جميع أزرار التبويبات (Bottom Nav + Home fast links)
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const target = e.currentTarget.dataset.target;
-          switchTab(target);
-        });
-      });
-
-      // ربط الطوابق
-      document.querySelectorAll('.floor-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const floor = e.currentTarget.dataset.floor;
-          setFloor(floor);
-        });
-      });
-
-      // ربط فلاتر الأعطال
-      document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const filter = e.currentTarget.dataset.filter;
-          setFilter(filter);
-        });
-      });
-
-      // بحث الأعطال
-      document.getElementById('search-input').addEventListener('input', renderFaults);
-
-      // إغلاق النوافذ
-      document.getElementById('btn-close-new-fault').addEventListener('click', () => closeModal('new-fault-modal'));
-      document.getElementById('btn-close-view-fault').addEventListener('click', () => closeModal('view-fault-modal'));
       
-      // رفع الصور
-      document.getElementById('nf-photo').addEventListener('change', function() { processImage(this, 'nf-preview'); });
-      document.getElementById('btn-submit-fault').addEventListener('click', submitFault);
-      
-      // التصدير
-      document.getElementById('btn-export-pdf').addEventListener('click', exportAllToPdf);
-    });
+      // تجهيز قائمة المواقع مبدئياً
+      window.renderLocationsList();
+    };
 
-    // ---------------- الدوّال المساعدة ----------------
-    function openModal(id) {
-      const el = document.getElementById(id);
-      if(el) { el.classList.remove('hidden'); el.classList.add('flex'); }
-    }
-    function closeModal(id) {
-      const el = document.getElementById(id);
-      if(el) { el.classList.add('hidden'); el.classList.remove('flex'); }
-    }
+    // 4. دوال التحكم بالواجهة (مربوطة بـ window لضمان العمل مع onclick)
+    window.openModal = function(id) {
+      document.getElementById(id).classList.remove('hidden');
+      document.getElementById(id).classList.add('flex');
+    };
+    
+    window.closeModal = function(id) {
+      document.getElementById(id).classList.add('hidden');
+      document.getElementById(id).classList.remove('flex');
+    };
 
-    function showToast(msg, type = 'info') {
+    window.showToast = function(msg, type = 'info') {
       const toast = document.getElementById('toast');
-      const icon = document.getElementById('toast-icon');
-      if(!toast || !icon) return;
-
       document.getElementById('toast-msg').textContent = msg;
-      icon.className = type === 'error' ? 'fa-solid fa-circle-exclamation text-red-400' 
-                   : type === 'success' ? 'fa-solid fa-circle-check text-emerald-400' 
-                   : 'fa-solid fa-circle-info text-sky-400';
-      
-      toast.classList.remove('opacity-0', 'pointer-events-none');
-      setTimeout(() => toast.classList.add('opacity-0', 'pointer-events-none'), 3500);
-    }
+      document.getElementById('toast-icon').className = type === 'error' ? 'fa-solid fa-circle-exclamation text-red-400 text-base' : 'fa-solid fa-circle-check text-emerald-400 text-base';
+      toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+      }, 3000);
+    };
 
-    function verifyLogin() {
+    // 5. دوال تسجيل الدخول
+    window.openLoginPin = function(role) {
+      window.currentRole = role;
+      document.getElementById('pin-role-title').textContent = role === 'inspector' ? 'دخول: مفتش صيانة' : role === 'worker' ? 'دخول: تسوية الأعطال' : 'دخول: الإدارة والمشرفين';
+      document.getElementById('pin-input').value = '';
+      window.openModal('pin-modal');
+    };
+
+    window.verifyLogin = function() {
       const pin = document.getElementById('pin-input').value;
-      if (pin === PIN_CODES[tempRole]) {
-        currentUser = {
-          role: tempRole,
-          name: tempRole === 'inspector' ? 'مفتش صيانة' : tempRole === 'worker' ? 'مسؤول تسوية' : 'مشرف إدارة المجمع'
+      if (pin === window.PIN_CODES[window.currentRole]) {
+        window.currentUser = { 
+          role: window.currentRole, 
+          name: window.currentRole === 'inspector' ? 'مفتش صيانة' : window.currentRole === 'worker' ? 'مسؤول تسوية' : 'مشرف إدارة المجمع' 
         };
-        closeModal('pin-modal');
-        document.getElementById('login-screen').style.display = 'none';
+        
+        window.closeModal('pin-modal');
+        document.getElementById('login-screen').classList.remove('block');
+        document.getElementById('login-screen').classList.add('hidden');
         
         const mainApp = document.getElementById('main-app');
         mainApp.classList.remove('hidden');
         mainApp.classList.add('flex');
         
-        document.getElementById('user-name-display').textContent = currentUser.name;
-        document.getElementById('user-role-badge').textContent = tempRole === 'inspector' ? 'صلاحية: إدخال' : tempRole === 'worker' ? 'صلاحية: معالجة' : 'صلاحية: مراقبة';
+        document.getElementById('user-name-display').textContent = window.currentUser.name;
+        document.getElementById('user-role-badge').textContent = window.currentRole === 'inspector' ? 'صلاحية: إدخال' : window.currentRole === 'worker' ? 'صلاحية: معالجة' : 'صلاحية: مشاهدة واعتماد';
         
-        refreshData();
+        window.refreshData(); // تحميل البيانات فور الدخول
+        window.switchTab('home'); // التأكد من الوقوف على الرئيسية
+        window.showToast('تم تسجيل الدخول بنجاح', 'success');
       } else {
-        showToast('الرقم السري غير صحيح', 'error');
+        window.showToast('الرقم السري غير صحيح', 'error');
       }
-    }
+    };
 
-    function logout() {
-      currentUser = null;
+    window.logout = function() {
+      if(!confirm('هل تريد تسجيل الخروج؟')) return;
+      window.currentUser = null;
       document.getElementById('main-app').classList.add('hidden');
       document.getElementById('main-app').classList.remove('flex');
-      document.getElementById('login-screen').style.display = 'block';
-    }
+      document.getElementById('login-screen').classList.remove('hidden');
+      document.getElementById('login-screen').classList.add('block');
+    };
 
-    function switchTab(tabId) {
-      // إخفاء المحتويات
-      document.querySelectorAll('.tab-content').forEach(el => {
-        el.classList.remove('active-tab');
-        el.classList.add('hidden-tab');
-      });
-      
-      // تفريغ الألوان من الشريط السفلي
-      document.querySelectorAll('.nav-icon').forEach(el => {
-        el.classList.remove('text-sky-600');
-        el.classList.add('text-slate-400');
-      });
-
+    // 6. نظام التنقل السلس والمضمون بين التبويبات
+    window.switchTab = function(tabId) {
+      // إخفاء كل المحتوى
+      const allTabs = document.querySelectorAll('.tab-content');
+      for (let i = 0; i < allTabs.length; i++) {
+        allTabs[i].classList.remove('active-tab');
+      }
       // إظهار التبويب المطلوب
       const targetTab = document.getElementById('tab-' + tabId);
-      if(targetTab) {
-        targetTab.classList.remove('hidden-tab');
-        targetTab.classList.add('active-tab');
+      if (targetTab) targetTab.classList.add('active-tab');
+
+      // تغيير لون الأزرار السفلية
+      const allNavBtns = document.querySelectorAll('.nav-btn');
+      for (let i = 0; i < allNavBtns.length; i++) {
+        allNavBtns[i].classList.remove('active');
       }
-
-      // تفعيل لون الزر السفلي إذا كان موجوداً
-      document.querySelectorAll(`.nav-icon[data-target="${tabId}"]`).forEach(el => {
-        el.classList.remove('text-slate-400');
-        el.classList.add('text-sky-600');
-      });
+      const activeBtn = document.getElementById('nav-' + tabId);
+      if (activeBtn) activeBtn.classList.add('active');
       
-      if (tabId === 'map') renderMap();
-      if (tabId === 'faults') renderFaults();
-    }
+      // تحديث البيانات الخاصة بالشاشة إن لزم
+      if (tabId === 'map') window.renderMap();
+      if (tabId === 'faults') window.renderFaultsList();
+    };
 
-    function setFloor(floor) {
-      currentFloor = floor;
-      const btnG = document.getElementById('btn-floor-ground');
-      const btnU = document.getElementById('btn-floor-upper');
+    // 7. جلب البيانات وتحديث الإحصائيات
+    window.refreshData = async function() {
+      const syncIcon = document.getElementById('sync-icon');
+      if (syncIcon) syncIcon.classList.add('fa-spin');
       
-      if(btnG && btnU) {
-        btnG.className = floor === 'ground' ? 'floor-btn px-3 py-1.5 rounded bg-white text-sky-700 shadow-sm transition' : 'floor-btn px-3 py-1.5 rounded text-slate-500 transition';
-        btnU.className = floor === 'upper' ? 'floor-btn px-3 py-1.5 rounded bg-white text-sky-700 shadow-sm transition' : 'floor-btn px-3 py-1.5 rounded text-slate-500 transition';
+      try {
+        if (!window.supabaseClient) throw new Error("لا يوجد اتصال بالخادم");
+        
+        const { data, error } = await window.supabaseClient
+          .from('faults')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (error) throw error;
+        
+        window.faultsData = data || [];
+        window.updateDashboardStats();
+        
+        // إذا كنا نقف على صفحة معينة، نحدثها
+        if (document.getElementById('tab-map').classList.contains('active-tab')) window.renderMap();
+        if (document.getElementById('tab-faults').classList.contains('active-tab')) window.renderFaultsList();
+        
+      } catch (e) {
+        console.error(e);
+        window.showToast('يوجد ضعف في الاتصال أثناء التحديث', 'error');
+      } finally {
+        if (syncIcon) syncIcon.classList.remove('fa-spin');
       }
-      renderMap();
-    }
+    };
 
-    function renderMap() {
+    window.updateDashboardStats = function() {
+      const total = window.faultsData.length;
+      const newFaults = window.faultsData.filter(f => f.status === 'new').length;
+      const progress = window.faultsData.filter(f => f.status === 'in_progress').length;
+      const comp = window.faultsData.filter(f => f.status === 'completed').length;
+      
+      document.getElementById('stat-total').textContent = total;
+      document.getElementById('stat-new').textContent = newFaults;
+      document.getElementById('stat-progress').textContent = progress;
+      document.getElementById('stat-completed').textContent = comp;
+      
+      const rate = total > 0 ? Math.round((comp / total) * 100) : 0;
+      document.getElementById('completion-rate-text').textContent = rate + '%';
+      document.getElementById('completion-rate-bar').style.width = rate + '%';
+    };
+
+    // 8. المخطط الهندسي الذكي
+    window.setFloor = function(floor) {
+      window.currentFloor = floor;
+      document.getElementById('btn-floor-ground').className = floor === 'ground' ? 'px-4 py-1.5 rounded-md bg-white text-sky-700 shadow-sm transition' : 'px-4 py-1.5 rounded-md text-slate-500 hover:text-slate-800 transition';
+      document.getElementById('btn-floor-upper').className = floor === 'upper' ? 'px-4 py-1.5 rounded-md bg-white text-sky-700 shadow-sm transition' : 'px-4 py-1.5 rounded-md text-slate-500 hover:text-slate-800 transition';
+      window.renderMap();
+    };
+
+    window.renderMap = function() {
       const container = document.getElementById('blueprint-map');
-      if(!container) return;
+      if (!container) return;
       container.innerHTML = '';
       
-      ZONES[currentFloor].forEach(z => {
-        const zoneFaults = faults.filter(f => f.location_id === z.key && f.status !== 'completed');
-        const hasFault = zoneFaults.length > 0;
+      window.ZONES[window.currentFloor].forEach(z => {
+        const zoneActiveFaults = window.faultsData.filter(f => f.location_id === z.key && f.status !== 'completed');
+        const hasFault = zoneActiveFaults.length > 0;
         
         const el = document.createElement('div');
-        el.className = 'zone-item';
-        el.style.left = `${(z.x / PLAN_W) * 100}%`;
-        el.style.top = `${(z.y / PLAN_H) * 100}%`;
-        el.style.width = `${(z.w / PLAN_W) * 100}%`;
-        el.style.height = `${(z.h / PLAN_H) * 100}%`;
-        el.style.backgroundColor = hasFault ? '#FEE2E2' : z.color;
-        el.style.borderColor = hasFault ? '#EF4444' : '#0284C7';
+        el.className = 'zone-item bg-slate-900/50 backdrop-blur-sm hover:bg-sky-900/80';
+        el.style.left = `${(z.x / window.PLAN_W) * 100}%`;
+        el.style.top = `${(z.y / window.PLAN_H) * 100}%`;
+        el.style.width = `${(z.w / window.PLAN_W) * 100}%`;
+        el.style.height = `${(z.h / window.PLAN_H) * 100}%`;
+        
+        if (hasFault) {
+          el.style.backgroundColor = 'rgba(254, 226, 226, 0.9)'; // أحمر فاتح
+          el.style.borderColor = '#EF4444';
+        } else {
+          el.style.backgroundColor = z.color;
+          el.style.borderColor = '#0284C7';
+        }
         
         el.innerHTML = `
           <i class="fa-solid ${z.icon} text-[10px]" style="color: ${hasFault ? '#EF4444' : '#0F172A'}"></i>
-          <span class="text-[6px] font-bold leading-tight mt-0.5" style="color: ${hasFault ? '#EF4444' : '#0F172A'}">${z.name_ar}</span>
-          ${hasFault ? `<div class="zone-badge">${zoneFaults.length}</div>` : ''}
+          <span class="text-[5.5px] font-bold leading-tight mt-0.5" style="color: ${hasFault ? '#EF4444' : '#0F172A'}">${z.name_ar}</span>
+          ${hasFault ? `<div class="zone-badge">${zoneActiveFaults.length}</div>` : ''}
         `;
         
-        el.addEventListener('click', () => handleZoneClick(z));
+        // أمر الضغط على الغرفة
+        el.onclick = () => window.handleZoneClick(z);
         container.appendChild(el);
       });
-    }
+    };
 
-    function handleZoneClick(zone) {
-      selectedLocation = zone;
-      if (currentUser.role === 'inspector') {
-        document.getElementById('nf-loc-name').textContent = zone.name_ar;
-        resetNewFaultForm();
-        openModal('new-fault-modal');
+    window.handleZoneClick = function(zone) {
+      window.selectedLocation = zone;
+      
+      if (window.currentUser.role === 'inspector') {
+        // المفتش: يفتح شاشة بلاغ جديد مباشرة
+        document.getElementById('nf-loc-name').textContent = zone.name_ar + ' (' + zone.wing + ')';
+        window.resetNewFaultForm();
+        window.openModal('new-fault-modal');
       } else {
-        currentSearch = zone.name_ar;
-        const searchInp = document.getElementById('search-input');
-        if(searchInp) searchInp.value = zone.name_ar;
-        switchTab('faults');
+        // الفني / المشرف: يفتح قائمة الأعطال مفلترة على هذه الغرفة
+        window.setFilter('all');
+        window.switchTab('faults');
+        window.showToast('تم عرض أعطال: ' + zone.name_ar, 'info');
       }
-    }
+    };
 
-    function processImage(input, previewId) {
+    // 9. التقاط ورفع الصور
+    window.processImage = function(input, previewId) {
       if (!input.files || !input.files[0]) return;
       const file = input.files[0];
       
-      if(previewId === 'nf-preview') {
+      if (previewId === 'nf-preview') {
         document.getElementById('nf-placeholder').classList.add('hidden');
         document.getElementById('nf-uploading').classList.remove('hidden');
         document.getElementById('nf-uploading').classList.add('flex');
@@ -755,6 +702,7 @@
       reader.onload = (e) => {
         const img = new Image();
         img.onload = async () => {
+          // ضغط الصورة لتسريع الرفع
           const canvas = document.createElement('canvas');
           const MAX_WIDTH = 800;
           let scale = 1;
@@ -765,31 +713,34 @@
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.6); // ضغط بنسبة 60%
           
           try {
-            if(!supabase) throw new Error("Supabase not loaded");
+            if (!window.supabaseClient) throw new Error("قاعدة البيانات غير متصلة");
             
-            const blob = await (await fetch(dataUrl)).blob();
+            // تحويل إلى Blob للرفع
+            const res = await fetch(dataUrl);
+            const blob = await res.blob();
             const fileName = `fault_${Date.now()}.jpg`;
-            const { data, error } = await supabase.storage.from('fault-photos').upload(fileName, blob);
             
+            const { data, error } = await window.supabaseClient.storage.from('fault-photos').upload(fileName, blob);
             if (error) throw error;
             
-            const publicUrl = supabase.storage.from('fault-photos').getPublicUrl(fileName).data.publicUrl;
+            const publicUrl = window.supabaseClient.storage.from('fault-photos').getPublicUrl(fileName).data.publicUrl;
             
             if (previewId === 'nf-preview') {
-              pendingUploadBase64 = publicUrl;
+              window.pendingUploadBase64 = publicUrl;
               document.getElementById('nf-uploading').classList.add('hidden');
               document.getElementById('nf-uploading').classList.remove('flex');
               document.getElementById(previewId).src = publicUrl;
               document.getElementById(previewId).classList.remove('hidden');
-            } else {
-              completeRepairDb(activeFaultItem.id, publicUrl);
+            } else if (previewId === 'vf-after') {
+              // هذا للفني لتأكيد التسوية
+              window.completeRepairDb(window.activeFaultItem.id, publicUrl);
             }
           } catch (err) {
             console.error(err);
-            showToast('حدث خطأ أثناء رفع الصورة', 'error');
+            window.showToast('تعذر رفع الصورة، تفقد اتصالك.', 'error');
             if (previewId === 'nf-preview') {
               document.getElementById('nf-uploading').classList.add('hidden');
               document.getElementById('nf-placeholder').classList.remove('hidden');
@@ -799,157 +750,148 @@
         img.src = e.target.result;
       };
       reader.readAsDataURL(file);
-    }
+    };
 
-    function resetNewFaultForm() {
-      pendingUploadBase64 = null;
+    window.resetNewFaultForm = function() {
+      window.pendingUploadBase64 = null;
       document.getElementById('nf-photo').value = '';
       document.getElementById('nf-preview').classList.add('hidden');
+      document.getElementById('nf-preview').src = '';
       document.getElementById('nf-placeholder').classList.remove('hidden');
       document.getElementById('nf-note').value = '';
-    }
+      document.getElementById('nf-type').selectedIndex = 0;
+      document.getElementById('nf-priority').selectedIndex = 1;
+    };
 
-    async function refreshData() {
-      const syncIcon = document.getElementById('sync-icon');
-      if(syncIcon) syncIcon.classList.add('fa-spin');
-      
-      try {
-        if(!supabase) throw new Error("Supabase not init");
-        const { data, error } = await supabase.from('faults').select('*').order('created_at', { ascending: false });
-        if (error) throw error;
-        faults = data || [];
-        updateDashboard();
-        
-        if (document.getElementById('tab-map').classList.contains('active-tab')) renderMap();
-        if (document.getElementById('tab-faults').classList.contains('active-tab')) renderFaults();
-      } catch (e) {
-        showToast('تعذر جلب البيانات', 'error');
-      } finally {
-        if(syncIcon) syncIcon.classList.remove('fa-spin');
-      }
-    }
-
-    function updateDashboard() {
-      const newF = faults.filter(f => f.status === 'new').length;
-      const prog = faults.filter(f => f.status === 'in_progress').length;
-      const comp = faults.filter(f => f.status === 'completed').length;
-      const total = faults.length;
-      
-      document.getElementById('stat-total').textContent = total;
-      document.getElementById('stat-new').textContent = newF;
-      document.getElementById('stat-progress').textContent = prog;
-      document.getElementById('stat-completed').textContent = comp;
-      
-      const rate = total > 0 ? Math.round((comp / total) * 100) : 0;
-      document.getElementById('completion-rate-text').textContent = rate + '%';
-      document.getElementById('completion-rate-bar').style.width = rate + '%';
-    }
-
-    async function submitFault() {
-      if (!pendingUploadBase64) {
-        showToast('يجب إرفاق صورة العطل المباشرة', 'error');
+    // 10. إرسال بلاغ جديد
+    window.submitFault = async function() {
+      if (!window.pendingUploadBase64) {
+        window.showToast('يجب التقاط وإرفاق صورة للعطل أولاً', 'error');
         return;
       }
       
       const btn = document.getElementById('btn-submit-fault');
+      const originalText = btn.innerHTML;
       btn.innerHTML = '<div class="loader mx-auto border-white border-t-transparent"></div>';
+      btn.disabled = true;
       
       const payload = {
-        location_id: selectedLocation.key,
-        location_name_ar: selectedLocation.name_ar,
-        location_name_en: selectedLocation.name_en || selectedLocation.name_ar,
-        floor: currentFloor,
+        location_id: window.selectedLocation.key,
+        location_name_ar: window.selectedLocation.name_ar,
+        location_name_en: window.selectedLocation.wing,
+        floor: window.currentFloor,
         type: document.getElementById('nf-type').value,
         priority: document.getElementById('nf-priority').value,
-        reporter_name: currentUser.name,
+        reporter_name: window.currentUser.name,
         note: document.getElementById('nf-note').value,
-        before_photo: pendingUploadBase64,
+        before_photo: window.pendingUploadBase64,
         status: 'new'
       };
 
       try {
-        const { error } = await supabase.from('faults').insert([payload]);
+        if (!window.supabaseClient) throw new Error("لا يوجد اتصال");
+        const { error } = await window.supabaseClient.from('faults').insert([payload]);
         if (error) throw error;
-        showToast('تم تسجيل البلاغ بنجاح', 'success');
-        closeModal('new-fault-modal');
-        refreshData();
+        
+        window.showToast('تم تسجيل وإرسال البلاغ بنجاح', 'success');
+        window.closeModal('new-fault-modal');
+        window.refreshData();
       } catch (e) {
-        showToast('تعذر إرسال البلاغ', 'error');
+        console.error(e);
+        window.showToast('تعذر إرسال البلاغ، حاول مجدداً', 'error');
       } finally {
-        btn.innerHTML = 'حفظ وإرسال البلاغ فوراً';
+        btn.innerHTML = originalText;
+        btn.disabled = false;
       }
-    }
+    };
 
-    function setFilter(flt) {
-      currentFilter = flt;
-      document.querySelectorAll('.filter-btn').forEach(btn => {
-        if (btn.dataset.filter === flt) {
-          btn.className = 'filter-btn px-4 py-1.5 rounded-full text-xs font-bold bg-sky-600 text-white whitespace-nowrap';
-        } else {
-          btn.className = 'filter-btn px-4 py-1.5 rounded-full text-xs font-bold bg-slate-200 text-slate-600 whitespace-nowrap';
+    // 11. سجل الأعطال والفلاتر
+    window.setFilter = function(flt) {
+      window.currentFilter = flt;
+      // تحديث واجهة الأزرار
+      const btns = ['flt-all', 'flt-new', 'flt-in_progress', 'flt-completed'];
+      btns.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          if (id === 'flt-' + flt) {
+            el.className = 'px-5 py-2 rounded-full text-xs font-bold bg-sky-600 text-white whitespace-nowrap shadow-sm transition';
+          } else {
+            el.className = 'px-5 py-2 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-600 whitespace-nowrap shadow-sm transition hover:bg-slate-50';
+          }
         }
       });
-      renderFaults();
-    }
+      window.renderFaultsList();
+    };
 
-    function renderFaults() {
-      const searchInp = document.getElementById('search-input');
-      if(searchInp) currentSearch = searchInp.value.toLowerCase();
-      
+    window.renderFaultsList = function() {
       const container = document.getElementById('faults-list');
-      if(!container) return;
+      if (!container) return;
       container.innerHTML = '';
       
-      const filtered = faults.filter(f => {
-        const matchStatus = currentFilter === 'all' || f.status === currentFilter;
-        const matchSearch = currentSearch === '' || f.location_name_ar.toLowerCase().includes(currentSearch) || (f.reporter_name && f.reporter_name.toLowerCase().includes(currentSearch));
-        return matchStatus && matchSearch;
+      // التصفية
+      const filtered = window.faultsData.filter(f => {
+        const matchStatus = window.currentFilter === 'all' || f.status === window.currentFilter;
+        // إذا كنا قد اخترنا غرفة من المخطط، نعرض أعطالها في البداية كأولوية
+        const matchLoc = window.selectedLocation ? (f.location_id === window.selectedLocation.key) : true;
+        return matchStatus && (window.selectedLocation ? matchLoc : true);
       });
 
       if (filtered.length === 0) {
-        container.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm"><i class="fa-solid fa-clipboard-check text-4xl mb-2"></i><br>لا توجد بلاغات مسجلة</div>`;
+        container.innerHTML = `
+          <div class="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+            <i class="fa-solid fa-clipboard-check text-4xl text-slate-300 mb-3"></i>
+            <p class="text-sm font-bold text-slate-500">لا توجد بلاغات تطابق بحثك حالياً</p>
+          </div>
+        `;
         return;
       }
 
       filtered.forEach(f => {
         const isComp = f.status === 'completed';
         const isProg = f.status === 'in_progress';
-        const statusTxt = isComp ? 'تمت التسوية' : isProg ? 'قيد العمل' : 'جديد';
-        const statusCol = isComp ? 'bg-emerald-100 text-emerald-700' : isProg ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700';
-        const prioTxt = f.priority === 'high' ? 'طارئ' : f.priority === 'medium' ? 'متوسط' : 'عادي';
+        
+        let statusTxt = 'جديد (بانتظار الفني)'; let statusCol = 'bg-red-100 text-red-700 border border-red-200';
+        if (isProg) { statusTxt = 'قيد المعالجة والإصلاح'; statusCol = 'bg-amber-100 text-amber-700 border border-amber-200'; }
+        if (isComp) { statusTxt = 'تمت التسوية بنجاح'; statusCol = 'bg-emerald-100 text-emerald-700 border border-emerald-200'; }
+        
+        const prioCol = f.priority === 'high' ? 'text-red-500' : f.priority === 'medium' ? 'text-amber-500' : 'text-emerald-500';
         
         const card = document.createElement('div');
-        card.className = 'bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex gap-3 cursor-pointer hover:border-sky-300 transition';
-        card.addEventListener('click', () => openViewFault(f));
+        card.className = 'bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex gap-3 cursor-pointer hover:border-sky-300 active:scale-[0.98] transition';
+        card.onclick = () => window.openViewFault(f);
         
         card.innerHTML = `
-          <img src="${f.before_photo}" class="w-16 h-16 object-cover rounded-lg bg-slate-100">
+          <img src="${f.before_photo}" class="w-16 h-16 object-cover rounded-lg bg-slate-100 border border-slate-200">
           <div class="flex-1 flex flex-col justify-center">
             <div class="flex justify-between items-start mb-1">
-              <h4 class="font-bold text-slate-800 text-xs">#${f.id.toString().slice(-4)} - ${f.location_name_ar}</h4>
-              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">${prioTxt}</span>
+              <h4 class="font-bold text-slate-800 text-xs truncate max-w-[150px]">${f.location_name_ar}</h4>
+              <i class="fa-solid fa-circle text-[8px] ${prioCol} mt-1"></i>
             </div>
-            <p class="text-[10px] text-slate-500">${f.type} · ${f.floor === 'ground' ? 'الأرضي' : 'العلوي'}</p>
-            <div class="mt-2 flex justify-start">
-              <span class="text-[9px] font-bold px-2 py-1 rounded ${statusCol}">${statusTxt}</span>
+            <p class="text-[10px] text-slate-500 mb-2">${f.type} · ${f.location_name_en}</p>
+            <div class="flex justify-start">
+              <span class="text-[9px] font-bold px-2 py-0.5 rounded ${statusCol}">${statusTxt}</span>
             </div>
           </div>
-          <div class="flex items-center justify-center pl-2">
+          <div class="flex items-center justify-center pl-1">
             <i class="fa-solid fa-chevron-left text-slate-300"></i>
           </div>
         `;
         container.appendChild(card);
       });
-    }
+      
+      // تفريغ الفلتر التلقائي بعد العرض حتى لو ضغط المستخدم على زر الفلترة يعمل للكل
+      window.selectedLocation = null; 
+    };
 
-    function openViewFault(f) {
-      activeFaultItem = f;
-      document.getElementById('vf-id').textContent = '#' + f.id.toString().slice(-4);
-      document.getElementById('vf-loc').textContent = f.location_name_ar + ' (' + (f.floor === 'ground' ? 'الأرضي' : 'العلوي') + ')';
+    // 12. عرض تفاصيل عطل والتصرف معه
+    window.openViewFault = function(f) {
+      window.activeFaultItem = f;
+      document.getElementById('vf-id').textContent = '#' + (f.display_id || f.id.toString().slice(-4));
+      document.getElementById('vf-loc').textContent = f.location_name_ar + ' - ' + f.location_name_en;
       document.getElementById('vf-type').textContent = f.type;
-      document.getElementById('vf-reporter').textContent = f.reporter_name || 'غير محدد';
+      document.getElementById('vf-reporter').textContent = f.reporter_name || 'مسجل آلي';
       document.getElementById('vf-before-img').src = f.before_photo;
-      document.getElementById('vf-note').textContent = f.note || 'لا توجد ملاحظات';
+      document.getElementById('vf-note').textContent = f.note || 'لا توجد ملاحظات إضافية مرفقة مع هذا البلاغ.';
       
       const afterSec = document.getElementById('vf-after-section');
       if (f.after_photo) {
@@ -959,101 +901,98 @@
         afterSec.classList.add('hidden');
       }
 
-      const actions = document.getElementById('vf-actions');
-      actions.innerHTML = '';
+      // بناء أزرار الإجراءات بناءً على صلاحية المستخدم الحالي وحالة العطل
+      const actionsDiv = document.getElementById('vf-actions');
+      actionsDiv.innerHTML = '';
       
-      if (currentUser.role === 'worker') {
+      if (window.currentUser.role === 'worker') {
         if (f.status === 'new') {
-          actions.innerHTML = `<button id="btn-start-repair" class="w-full py-3 bg-sky-600 text-white rounded-xl font-bold text-xs shadow-md">بدء تسوية العطل</button>`;
+          actionsDiv.innerHTML = `
+            <button onclick="window.startRepairDb('${f.id}')" class="w-full py-3.5 bg-sky-600 text-white rounded-xl font-bold text-sm shadow-md hover:bg-sky-700 transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-wrench"></i> استلام وبدء المعالجة
+            </button>
+          `;
         } else if (f.status === 'in_progress') {
-          actions.innerHTML = `
-            <div id="btn-complete-repair" class="border-2 border-dashed border-emerald-300 bg-emerald-50 rounded-xl p-3 text-center cursor-pointer">
-              <input type="file" id="vf-upload-after" accept="image/*" capture="environment" class="hidden">
-              <i class="fa-solid fa-camera text-emerald-600 text-xl mb-1"></i>
-              <p class="text-xs text-emerald-700 font-bold">تصوير الإنجاز وإغلاق البلاغ</p>
+          actionsDiv.innerHTML = `
+            <div onclick="document.getElementById('vf-upload-after').click()" class="border-2 border-dashed border-emerald-400 bg-emerald-50 hover:bg-emerald-100 transition rounded-xl p-4 text-center cursor-pointer">
+              <input type="file" id="vf-upload-after" accept="image/*" capture="environment" class="hidden" onchange="window.processImage(this, 'vf-after')">
+              <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-2 text-emerald-600"><i class="fa-solid fa-camera text-lg"></i></div>
+              <p class="text-xs text-emerald-800 font-bold">إرفاق صورة الإنجاز وإغلاق البلاغ</p>
             </div>
           `;
         }
-      } else if (currentUser.role === 'supervisor') {
-        actions.innerHTML = `<button id="btn-delete-fault" class="w-full py-3 bg-red-500 text-white rounded-xl font-bold text-xs shadow-md"><i class="fa-solid fa-trash ml-2"></i> حذف البلاغ نهائياً</button>`;
+      } else if (window.currentUser.role === 'supervisor') {
+        actionsDiv.innerHTML = `
+          <button onclick="window.deleteFaultDb('${f.id}')" class="w-full py-3.5 bg-red-50 text-red-600 border border-red-200 rounded-xl font-bold text-sm shadow-sm hover:bg-red-100 transition flex items-center justify-center gap-2 mt-2">
+            <i class="fa-solid fa-trash-can"></i> حذف البلاغ نهائياً
+          </button>
+        `;
       }
 
-      openModal('view-fault-modal');
+      window.openModal('view-fault-modal');
+    };
 
-      // تفعيل أزرار النافذة بعد حقنها
-      setTimeout(() => {
-        const startBtn = document.getElementById('btn-start-repair');
-        const compBtn = document.getElementById('btn-complete-repair');
-        const uploadAft = document.getElementById('vf-upload-after');
-        const delBtn = document.getElementById('btn-delete-fault');
-
-        if(startBtn) startBtn.addEventListener('click', () => startRepairDb(f.id));
-        if(compBtn && uploadAft) {
-          compBtn.addEventListener('click', () => uploadAft.click());
-          uploadAft.addEventListener('change', function() { processImage(this, 'vf-after'); });
-        }
-        if(delBtn) delBtn.addEventListener('click', () => deleteFaultDb(f.id));
-      }, 50);
-    }
-
-    async function startRepairDb(id) {
+    window.startRepairDb = async function(id) {
+      if(!confirm('هل أنت متأكد من استلام المهمة والبدء فيها؟')) return;
       try {
-        await supabase.from('faults').update({ status: 'in_progress', worker_name: currentUser.name }).eq('id', id);
-        showToast('تم بدء المهمة', 'success');
-        closeModal('view-fault-modal');
-        refreshData();
-      } catch (e) { showToast('حدث خطأ', 'error'); }
-    }
+        if (!window.supabaseClient) throw new Error("لا يوجد اتصال");
+        await window.supabaseClient.from('faults').update({ status: 'in_progress', worker_name: window.currentUser.name }).eq('id', id);
+        window.showToast('تم استلام المهمة بنجاح', 'success');
+        window.closeModal('view-fault-modal');
+        window.refreshData();
+      } catch (e) {
+        window.showToast('حدث خطأ أثناء الاتصال', 'error');
+      }
+    };
 
-    async function completeRepairDb(id, photoUrl) {
+    window.completeRepairDb = async function(id, photoUrl) {
       try {
-        await supabase.from('faults').update({ status: 'completed', worker_name: currentUser.name, after_photo: photoUrl }).eq('id', id);
-        showToast('تم تأكيد التسوية والإنجاز', 'success');
-        closeModal('view-fault-modal');
-        refreshData();
-      } catch (e) { showToast('حدث خطأ', 'error'); }
-    }
+        if (!window.supabaseClient) throw new Error("لا يوجد اتصال");
+        await window.supabaseClient.from('faults').update({ status: 'completed', worker_name: window.currentUser.name, after_photo: photoUrl }).eq('id', id);
+        window.showToast('تم إغلاق البلاغ والتسوية بنجاح!', 'success');
+        window.closeModal('view-fault-modal');
+        window.refreshData();
+      } catch (e) {
+        window.showToast('حدث خطأ أثناء إغلاق البلاغ', 'error');
+      }
+    };
 
-    async function deleteFaultDb(id) {
-      if(!confirm('هل أنت متأكد من حذف البلاغ؟')) return;
+    window.deleteFaultDb = async function(id) {
+      if (!confirm('سيتم مسح هذا البلاغ نهائياً من السجلات، هل توافق؟')) return;
       try {
-        await supabase.from('faults').delete().eq('id', id);
-        showToast('تم الحذف', 'success');
-        closeModal('view-fault-modal');
-        refreshData();
-      } catch (e) { showToast('حدث خطأ', 'error'); }
-    }
+        if (!window.supabaseClient) throw new Error("لا يوجد اتصال");
+        await window.supabaseClient.from('faults').delete().eq('id', id);
+        window.showToast('تم مسح السجل بنجاح', 'success');
+        window.closeModal('view-fault-modal');
+        window.refreshData();
+      } catch (e) {
+        window.showToast('حدث خطأ أثناء الحذف', 'error');
+      }
+    };
 
-    function exportAllToPdf() {
-      if(faults.length === 0) { showToast('لا توجد بلاغات', 'error'); return; }
-      const area = document.getElementById('print-area');
+    // 13. عرض قائمة المواقع التوضيحية
+    window.renderLocationsList = function() {
+      const list = document.getElementById('locations-list');
+      if (!list) return;
+      list.innerHTML = '';
       
-      let rows = faults.map((f, i) => `
-        <tr style="border-bottom: 1px solid #E2E8F0; font-size: 11px; text-align: center;">
-          <td style="padding: 6px;">#${f.id.toString().slice(-4)}</td>
-          <td style="padding: 6px;">${f.location_name_ar}</td>
-          <td style="padding: 6px;">${f.type}</td>
-          <td style="padding: 6px;">${f.status === 'completed' ? 'تمت التسوية' : f.status === 'in_progress' ? 'قيد العمل' : 'جديد'}</td>
-          <td style="padding: 6px;">${f.reporter_name}</td>
-        </tr>
-      `).join('');
+      const allZones = [...window.ZONES.ground, ...window.ZONES.upper];
+      allZones.forEach(z => {
+        list.innerHTML += `
+          <div class="p-3.5 flex items-center justify-between hover:bg-slate-50 transition">
+            <div class="flex items-center gap-3">
+              <i class="fa-solid ${z.icon} text-sky-500 text-lg w-6 text-center"></i>
+              <div>
+                <p class="font-bold text-slate-800 text-xs">${z.name_ar}</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">${z.wing}</p>
+              </div>
+            </div>
+            <span class="text-[9px] font-bold px-2 py-1 bg-slate-100 rounded text-slate-500 border border-slate-200">مرفق معتمد</span>
+          </div>
+        `;
+      });
+    };
 
-      area.innerHTML = `
-        <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #0F172A; padding-bottom: 10px;">
-          <h2 style="font-size: 18px; font-weight: bold;">مجمع زايد التعليمي - سجل البلاغات العام</h2>
-          <p style="font-size: 12px; color: #64748B;">تاريخ الاستخراج: ${new Date().toLocaleDateString()}</p>
-        </div>
-        <table style="width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr style="background-color: #0F172A; color: white; font-size: 12px;">
-              <th style="padding: 8px;">#</th><th style="padding: 8px;">المرفق</th><th style="padding: 8px;">النوع</th><th style="padding: 8px;">الحالة</th><th style="padding: 8px;">المفتش</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      `;
-      window.print();
-    }
   </script>
 </body>
 </html>
